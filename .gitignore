@@ -1,0 +1,11 @@
+/node_modules/
+/.next/
+/out/
+/.npm-cache/
+/.playwright-cli/
+/output/playwright/
+*.tsbuildinfo
+.env*
+!.env.example
+.DS_Store
+/next-env.d.ts
