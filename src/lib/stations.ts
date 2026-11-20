@@ -58,6 +58,26 @@ export function providerUrl(station: Station) {
     : `https://www.youtube.com/playlist?list=${station.playlistId}`;
 }
 
+export function youtubeOembedUrl(playlistId: string) {
+  const target = `https://www.youtube.com/playlist?list=${playlistId}`;
+  return `https://www.youtube.com/oembed?${new URLSearchParams({ url: target, format: "json" })}`;
+}
+
+export function oembedProblem(status: number) {
+  if (status === 404) return "YouTube no encuentra esta playlist. Puede ser privada o estar eliminada.";
+  if (status === 401 || status === 403) return "YouTube no permite incrustar esta playlist fuera de su sitio.";
+  return null;
+}
+
+/** Picks the next station after `from` (circular) whose key is not in `failed`. */
+export function nextPlayable(stations: Station[], from: number, failed: ReadonlySet<string>) {
+  for (let step = 1; step < stations.length; step++) {
+    const candidate = stations[(from + step) % stations.length];
+    if (!failed.has(stationKey(candidate))) return candidate;
+  }
+  return null;
+}
+
 function cleanStation(input: unknown): Station | null {
   if (!input || typeof input !== "object") return null;
   const { provider, playlistId, name: inputName } = input as Record<string, unknown>;

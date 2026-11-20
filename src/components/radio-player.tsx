@@ -7,6 +7,7 @@ import type { Station } from "@/types/station";
 
 const EMBED_PERMISSIONS = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
 const LOAD_TIMEOUT = 12_000;
+const SKIP_DELAY = 5;
 
 interface YouTubePlayer {
   destroy(): void;
@@ -76,9 +77,19 @@ function youtubeError(code: number) {
   return "YouTube no pudo reproducir este contenido.";
 }
 
-export function RadioPlayer({ station }: { station: Station }) {
+interface Props {
+  station: Station;
+  /** Called when the station cannot play; returns the name of the next station, or null if none is left. */
+  onUnplayable?: () => string | null;
+  onSkip?: () => void;
+}
+
+export function RadioPlayer({ station, onUnplayable, onSkip }: Props) {
   const frame = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
+  const [blocked, setBlocked] = useState(false);
+  const [next, setNext] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(SKIP_DELAY);
   const { provider, playlistId, name } = station;
   const platform = PROVIDERS[provider];
 
@@ -119,7 +130,14 @@ export function RadioPlayer({ station }: { station: Station }) {
       void loadYouTubeApi().then((api) => {
         if (!alive) return;
         player = new api.Player(iframe, {
-          events: { onError: (event) => { if (alive) setError(youtubeError(event.data)); } },
+          events: {
+            onError: (event) => {
+              if (!alive) return;
+              setError(youtubeError(event.data));
+              setBlocked(true);
+              setNext(onUnplayable?.() ?? null);
+            },
+          },
         });
       }).catch(() => {
         // The standards-based iframe still works when the optional API is blocked.
@@ -133,7 +151,18 @@ export function RadioPlayer({ station }: { station: Station }) {
       player?.destroy();
       iframe.remove();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playlistId, provider]);
+
+  useEffect(() => {
+    if (!blocked || !next || !onSkip) return;
+    if (countdown <= 0) {
+      onSkip();
+      return;
+    }
+    const tick = window.setTimeout(() => setCountdown((value) => value - 1), 1000);
+    return () => window.clearTimeout(tick);
+  }, [blocked, next, countdown, onSkip]);
 
   useEffect(() => {
     const iframe = frame.current?.querySelector("iframe");
@@ -148,8 +177,24 @@ export function RadioPlayer({ station }: { station: Station }) {
           Abrir en {platform} <ExternalLink size={14} aria-hidden="true" />
         </a>
       </div>
-      <div ref={frame} className={`embed-frame embed-${provider}`} />
-      {error && (
+      <div ref={frame} className={`embed-frame embed-${provider}`} hidden={blocked} />
+      {blocked && (
+        <div className="embed-frame embed-blocked">
+          <TriangleAlert size={28} aria-hidden="true" />
+          <strong>No se puede reproducir aquí</strong>
+          <p>{error}</p>
+          <a className="primary-button" href={providerUrl(station)} target="_blank" rel="noopener noreferrer">
+            Ver en {platform} <ExternalLink size={14} aria-hidden="true" />
+          </a>
+        </div>
+      )}
+      {blocked && next && (
+        <p className="player-error" role="status">
+          Pasando a «{next}» en {countdown} s.
+          <button type="button" className="secondary-button" onClick={() => setNext(null)}>Quedarme aquí</button>
+        </p>
+      )}
+      {error && !blocked && (
         <p className="player-error" role="status">
           <TriangleAlert size={17} aria-hidden="true" /> {error} Usa el enlace para abrirlo en {platform}.
         </p>

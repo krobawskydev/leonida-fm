@@ -6,7 +6,7 @@ import {
   Plus, Radio, RadioTower, Share2, Trash2, X,
 } from "lucide-react";
 import { useStations } from "@/hooks/use-stations";
-import { DEFAULT_KEY, PROVIDERS, shareHref, stationKey } from "@/lib/stations";
+import { DEFAULT_KEY, PROVIDERS, nextPlayable, shareHref, stationKey } from "@/lib/stations";
 import type { Station } from "@/types/station";
 import { RadioPlayer } from "./radio-player";
 import { StationDialog } from "./station-dialog";
@@ -61,6 +61,7 @@ export function RadioConsole() {
   const radio = useStations();
   const [editor, setEditor] = useState<"new" | Station>();
   const [shared, setShared] = useState<Station>();
+  const failed = useRef(new Set<string>());
   const { preview } = radio;
   const activeKey = stationKey(radio.active);
   const activeIndex = radio.stations.findIndex((station) => stationKey(station) === activeKey);
@@ -71,6 +72,16 @@ export function RadioConsole() {
     const { stations } = radio;
     const next = stations[(activeIndex + direction + stations.length) % stations.length];
     radio.select(stationKey(next));
+  }
+
+  function reportUnplayable() {
+    failed.current.add(activeKey);
+    return nextPlayable(radio.stations, activeIndex, failed.current)?.name ?? null;
+  }
+
+  function skipUnplayable() {
+    const next = nextPlayable(radio.stations, activeIndex, failed.current);
+    if (next) radio.select(stationKey(next));
   }
 
   function save(station: Station) {
@@ -155,7 +166,7 @@ export function RadioConsole() {
               </div>
             </div>
             {radio.ready
-              ? <RadioPlayer key={activeKey} station={radio.active} />
+              ? <RadioPlayer key={activeKey} station={radio.active} onUnplayable={reportUnplayable} onSkip={skipUnplayable} />
               : <div className="player-skeleton" aria-busy="true" aria-label="Cargando reproductor" />}
           </section>
 

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  DEFAULT_KEY, DEFAULT_STATION, emptyRadio, normalizeName, parsePlaylist,
-  readSavedRadio, readSharedStation, shareHref, stationKey,
+  DEFAULT_KEY, DEFAULT_STATION, emptyRadio, nextPlayable, normalizeName, oembedProblem, parsePlaylist,
+  readSavedRadio, readSharedStation, shareHref, stationKey, youtubeOembedUrl,
 } from "../src/lib/stations.ts";
 import type { Station } from "../src/types/station.ts";
 
@@ -86,4 +86,22 @@ test("recupera valores iniciales ante JSON corrupto, ausente o de versión desco
   for (const value of [null, "{mal", "null", '{"version":2,"stations":[]}']) {
     assert.deepEqual(readSavedRadio(value), emptyRadio());
   }
+});
+
+test("clasifica respuestas oEmbed de YouTube", () => {
+  assert.equal(oembedProblem(200), null);
+  assert.match(oembedProblem(404) ?? "", /privada|eliminada/);
+  assert.match(oembedProblem(401) ?? "", /incrustar/);
+  assert.equal(oembedProblem(500), null);
+  assert.ok(youtubeOembedUrl("PLabc1234567890").startsWith("https://www.youtube.com/oembed?url="));
+});
+
+test("salta a la siguiente estación reproducible de forma circular", () => {
+  const make = (playlistId: string): Station => ({ provider: "youtube", playlistId, name: playlistId });
+  const list = [make("PLaaaaaaaaaaa"), make("PLbbbbbbbbbbb"), make("PLccccccccccc")];
+  const failed = new Set([stationKey(list[1])]);
+  assert.equal(nextPlayable(list, 0, failed)?.playlistId, "PLccccccccccc");
+  assert.equal(nextPlayable(list, 2, failed)?.playlistId, "PLaaaaaaaaaaa");
+  failed.add(stationKey(list[0])).add(stationKey(list[2]));
+  assert.equal(nextPlayable(list, 0, failed), null);
 });

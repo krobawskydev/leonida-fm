@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
-import { NAME_LIMIT, PROVIDERS, normalizeName, parsePlaylist } from "@/lib/stations";
+import { NAME_LIMIT, PROVIDERS, normalizeName, oembedProblem, parsePlaylist, youtubeOembedUrl } from "@/lib/stations";
 import type { Provider, Station } from "@/types/station";
 
 interface Props {
@@ -17,12 +17,23 @@ export function StationDialog({ station, onClose, onSave }: Props) {
   const urlInput = useRef<HTMLInputElement>(null);
   const [provider, setProvider] = useState<Provider>(station?.provider ?? "spotify");
   const [error, setError] = useState<{ field: "name" | "url"; message: string }>();
+  const [checking, setChecking] = useState(false);
+  const [warned, setWarned] = useState<string>();
 
   useEffect(() => {
     dialog.current?.showModal();
   }, []);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function embedWarning(playlistId: string) {
+    try {
+      const response = await fetch(youtubeOembedUrl(playlistId), { signal: AbortSignal.timeout(4000) });
+      return oembedProblem(response.status);
+    } catch {
+      return null; // Offline or blocked: the check is advisory only.
+    }
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const name = normalizeName(nameInput.current?.value);
     if (!name) {
@@ -36,6 +47,17 @@ export function StationDialog({ station, onClose, onSave }: Props) {
       urlInput.current?.focus();
       return;
     }
+    if (!station && provider === "youtube" && warned !== playlistId) {
+      setChecking(true);
+      const warning = await embedWarning(playlistId);
+      setChecking(false);
+      if (warning) {
+        setWarned(playlistId);
+        setError({ field: "url", message: `${warning} Pulsa «Guardar estación» otra vez para añadirla de todos modos.` });
+        urlInput.current?.focus();
+        return;
+      }
+    }
     const message = onSave({ provider, playlistId, name });
     if (message) {
       setError({ field: "url", message });
@@ -47,7 +69,7 @@ export function StationDialog({ station, onClose, onSave }: Props) {
 
   return (
     <dialog ref={dialog} className="station-dialog" aria-labelledby="dialog-title" onClose={onClose}>
-      <form onSubmit={submit} noValidate>
+      <form onSubmit={(event) => void submit(event)} noValidate>
         <div className="flex items-center justify-between gap-4">
           <h2 id="dialog-title">{station ? "Renombrar estación" : "Añadir estación"}</h2>
           <button type="button" className="icon-button" aria-label="Cerrar" onClick={() => dialog.current?.close()}>
@@ -96,7 +118,7 @@ export function StationDialog({ station, onClose, onSave }: Props) {
         {error && <p className="form-error" id="station-error" role="alert">{error.message}</p>}
         <div className="dialog-actions">
           <button type="button" className="secondary-button" onClick={() => dialog.current?.close()}>Cancelar</button>
-          <button type="submit" className="primary-button">Guardar estación</button>
+          <button type="submit" className="primary-button" disabled={checking}>{checking ? "Comprobando…" : "Guardar estación"}</button>
         </div>
       </form>
     </dialog>
