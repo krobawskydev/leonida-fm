@@ -98,7 +98,7 @@ export function useStations() {
 
     startTransition(() => dispatch({
       type: "initialize",
-      state: { saved, preview, ready: true, write: !!shared && !preview, storageUnavailable, invalidShare: hasShare && !shared },
+      state: { saved, preview, ready: true, write: false, storageUnavailable, invalidShare: hasShare && !shared },
     }));
   }, []);
 
@@ -116,6 +116,7 @@ export function useStations() {
   const stations = state.preview ? [...collection, state.preview] : collection;
 
   function select(key: string) {
+    if (key === stationKey(active) && !state.invalidShare) return;
     clearShare();
     dispatch({ type: "select", key });
   }
