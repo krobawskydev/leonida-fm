@@ -1,13 +1,15 @@
 "use client";
 
-import { startTransition, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import {
   AudioLines, ChevronLeft, ChevronRight, Copy, ListMusic, LockKeyhole, Pencil,
-  Plus, Radio, RadioTower, Share2, Trash2, X,
+  Pause, Play, Plus, Radio, RadioTower, Share2, Trash2, X,
 } from "lucide-react";
+import { useScreenTransition } from "@/hooks/use-screen-transition";
 import { useStations } from "@/hooks/use-stations";
 import { DEFAULT_KEY, PROVIDERS, nextPlayable, shareHref, stationKey } from "@/lib/stations";
 import type { Station } from "@/types/station";
+import { CarSceneLayer, type SceneStatus } from "./car-scene-layer";
 import { RadioPlayer } from "./radio-player";
 import { StationDialog } from "./station-dialog";
 
@@ -62,6 +64,11 @@ function ShareDialog({ station, onClose }: { station: Station; onClose: () => vo
   );
 }
 
+function subscribeVisibility(callback: () => void) {
+  document.addEventListener("visibilitychange", callback);
+  return () => document.removeEventListener("visibilitychange", callback);
+}
+
 export function RadioConsole() {
   const radio = useStations();
   const [editor, setEditor] = useState<"new" | Station>();
@@ -76,7 +83,13 @@ export function RadioConsole() {
   const focusTarget = useRef<"open" | "station" | "collection" | null>(null);
   const look = useRef<HTMLDivElement>(null);
   const consolePanel = useRef<HTMLDivElement>(null);
-  const openingButton = useRef<DOMRect | null>(null);
+  const [sceneStatus, setSceneStatus] = useState<SceneStatus>("static");
+  const [scenePaused, setScenePaused] = useState(false);
+  const tabHidden = useSyncExternalStore(subscribeVisibility, () => document.hidden, () => false);
+  const transition = useScreenTransition(view, consolePanel, openButton);
+  const onSceneStatus = useCallback((status: SceneStatus) => setSceneStatus(status), []);
+  // The landscape only moves while the cockpit is in view, the tab is visible and the user has not paused it.
+  const sceneRunning = view === "car" && !tabHidden && !scenePaused;
   const { preview } = radio;
   const activeKey = stationKey(radio.active);
   const activeIndex = radio.stations.findIndex((station) => stationKey(station) === activeKey);
@@ -100,32 +113,13 @@ export function RadioConsole() {
         collectionButton.current?.focus();
         return;
       }
+      transition.markClosing();
       focusTarget.current = "open";
       setView("car");
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [view, collectionOpen]);
-
-  useLayoutEffect(() => {
-    const panel = consolePanel.current;
-    if (view !== "radio" || !panel) return;
-    const origin = openingButton.current;
-    openingButton.current = null;
-    if (!origin) return;
-
-    const bounds = panel.getBoundingClientRect();
-    panel.style.setProperty("--entry-x", `${origin.left + origin.width / 2 - bounds.left - bounds.width / 2}px`);
-    panel.style.setProperty("--entry-y", `${origin.top + origin.height / 2 - bounds.top - bounds.height / 2}px`);
-    panel.style.setProperty("--entry-scale-x", String(Math.min(.95, origin.width / bounds.width)));
-    panel.style.setProperty("--entry-scale-y", String(Math.min(.95, origin.height / bounds.height)));
-
-    return () => {
-      for (const prop of ["--entry-x", "--entry-y", "--entry-scale-x", "--entry-scale-y"]) {
-        panel.style.removeProperty(prop);
-      }
-    };
-  }, [view]);
+  }, [view, collectionOpen, transition]);
 
   // Keep the last camera position while the radio is open.
   useEffect(() => {
@@ -148,7 +142,7 @@ export function RadioConsole() {
     function onMove(event: PointerEvent) {
       if (event.pointerType !== "mouse" || !wide.matches) return;
       // Hold the view still over controls so the button does not drift away from the cursor.
-      if (event.target instanceof Element && event.target.closest(".open-radio, .site-header, .cabin")) return;
+      if (event.target instanceof Element && event.target.closest(".open-radio, .scene-toggle, .site-header, .cabin")) return;
       targetX = (event.clientX / window.innerWidth) * 2 - 1;
       targetY = (event.clientY / window.innerHeight) * 2 - 1;
       if (!frame) frame = requestAnimationFrame(tick);
@@ -171,7 +165,7 @@ export function RadioConsole() {
       (target === "collection" ? collectionHeading : stationHeading).current?.focus();
       return;
     }
-    if (target === "station") openingButton.current = openButton.current?.getBoundingClientRect() ?? null;
+    if (target === "station") transition.markOpening(openButton.current?.getBoundingClientRect() ?? null);
     focusTarget.current = target;
     setView("radio");
   }
@@ -187,6 +181,7 @@ export function RadioConsole() {
   }
 
   function backToCar() {
+    transition.markClosing();
     focusTarget.current = "open";
     setCollectionOpen(false);
     setView("car");
@@ -249,6 +244,7 @@ export function RadioConsole() {
                   src="/car/cockpit-sunset.webp" width={1600} height={900} fetchPriority="high"
                   alt="Vista desde el asiento del conductor de un descapotable al atardecer, con una avenida costera de palmeras y edificios art déco al frente."
                 />
+                <CarSceneLayer playing={sceneRunning} onStatus={onSceneStatus} />
               </div>
               <div className="car-band" aria-hidden={view === "radio" || undefined}>
                 <button
@@ -272,6 +268,15 @@ export function RadioConsole() {
                 </button>
               </div>
             </div>
+            {sceneStatus === "ready" && (
+              <button
+                type="button" className="scene-toggle" disabled={view !== "car"}
+                onClick={() => setScenePaused((paused) => !paused)}
+              >
+                {scenePaused ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}
+                {scenePaused ? "Reanudar paisaje" : "Pausar paisaje"}
+              </button>
+            )}
           </section>
           {(radio.invalidShare || radio.storageUnavailable) && (
             <div className="app-notice" role="status">
