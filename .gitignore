@@ -9,3 +9,7 @@
 !.env.example
 .DS_Store
 /next-env.d.ts
+
+# Local Git bundles
+/leonida-fm-first-version.bundle
+/leonida-fm-history.bundle
