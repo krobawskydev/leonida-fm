@@ -29,6 +29,11 @@ export function stationCollection(customStations: Station[]) {
   return [...PRESET_STATIONS.filter((station) => !customKeys.has(stationKey(station))), ...customStations];
 }
 
+export function stationWindowStart(activeIndex: number, total: number, size: number) {
+  const centered = activeIndex - Math.floor(size / 2);
+  return Math.max(0, Math.min(centered, total - size));
+}
+
 export function stationForProvider(stations: Station[], provider: Provider, preferredKey = stationKey(defaultStationFor(provider))) {
   return stations.find((station) => station.provider === provider && stationKey(station) === preferredKey)
     ?? stations.find((station) => station.provider === provider)

@@ -3,7 +3,7 @@ import { test } from "node:test";
 import {
   DEFAULT_KEY, DEFAULT_STATION, emptyRadio, nextPlayable, normalizeName, oembedProblem, parsePlaylist,
   parseStationUrl, providerUrl, readSavedRadio, readSharedStation, shareHref, stationCollection,
-  stationForProvider, stationKey, youtubeOembedUrl,
+  stationForProvider, stationKey, stationWindowStart, youtubeOembedUrl,
 } from "../src/lib/stations.ts";
 import type { Station } from "../src/types/station.ts";
 import { DEFAULT_YOUTUBE_STATION, youtubeQueue } from "../src/lib/station-presets.ts";
@@ -175,4 +175,17 @@ test("salta a la siguiente estación reproducible de forma circular", () => {
   assert.equal(nextPlayable(list, 2, failed)?.playlistId, "PLaaaaaaaaaaa");
   failed.add(stationKey(list[0])).add(stationKey(list[2]));
   assert.equal(nextPlayable(list, 0, failed), null);
+});
+
+test("la rueda mantiene la estación activa y llena los lugares al llegar al final", () => {
+  const total = 18;
+  const size = 8;
+  const stations = Array.from({ length: total }, (_, index) => index);
+  for (const active of stations) {
+    const start = stationWindowStart(active, total, size);
+    const visible = stations.slice(start, start + size);
+    assert.equal(visible.length, size);
+    assert.ok(visible.includes(active));
+  }
+  assert.equal(stationWindowStart(1, 2, size), 0);
 });

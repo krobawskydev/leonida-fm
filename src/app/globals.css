@@ -204,6 +204,12 @@ button:disabled { cursor: default; opacity: .5; }
   transition: left 190ms ease-out;
 }
 .dial-labels { display: flex; justify-content: space-between; margin-top: .37rem; color: #b8b8ca; font: .7rem var(--mono); }
+.station-directory-link {
+  display: flex; align-items: center; gap: .5rem; min-height: 2.75rem;
+  margin: .25rem auto 0; padding-inline: .75rem; border-radius: .5rem;
+  color: var(--teal); font: 650 .83rem var(--mono);
+}
+.station-directory-link:hover { background: #6ce4d41c; }
 
 .primary-button, .secondary-button, .icon-button, .add-station {
   display: inline-flex;
@@ -611,6 +617,7 @@ button:disabled { cursor: default; opacity: .5; }
   }
   .cabin .dial-controls { gap: .5rem .75rem; }
   .cabin .tune-button { width: 3rem; height: 3rem; }
+  .cabin .station-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* Keep the same provider iframe when returning to the driving view. */

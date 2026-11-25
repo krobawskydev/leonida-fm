@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useScreenTransition } from "@/hooks/use-screen-transition";
 import { useStations } from "@/hooks/use-stations";
-import { DEFAULT_KEY, PROVIDERS, matchingPresetKey, nextPlayable, shareHref, stationKey } from "@/lib/stations";
+import { DEFAULT_KEY, PROVIDERS, matchingPresetKey, nextPlayable, shareHref, stationKey, stationWindowStart } from "@/lib/stations";
 import type { Provider, Station } from "@/types/station";
 import { CarSceneLayer } from "./car-scene-layer";
 import { RadioPlayer } from "./radio-player";
@@ -97,7 +97,7 @@ export function RadioConsole() {
   const { preview } = radio;
   const activeKey = stationKey(radio.active);
   const activeIndex = radio.stations.findIndex((station) => stationKey(station) === activeKey);
-  const wheelStart = Math.floor(activeIndex / WHEEL_STATIONS) * WHEEL_STATIONS;
+  const wheelStart = stationWindowStart(activeIndex, radio.stations.length, WHEEL_STATIONS);
   const wheelStations = radio.stations.slice(wheelStart, wheelStart + WHEEL_STATIONS);
   const wheelSlots = wheelStations.length + 1;
   const frequency = (88.1 + 19.8 * (activeIndex / Math.max(5, radio.stations.length - 1))).toFixed(1);
@@ -200,6 +200,11 @@ export function RadioConsole() {
     }
     focusTarget.current = "collection";
     setCollectionOpen(true);
+  }
+
+  function showCollection() {
+    if (collectionOpen) collectionHeading.current?.focus();
+    else toggleCollection();
   }
 
   function backToCar() {
@@ -408,6 +413,11 @@ export function RadioConsole() {
                     <ChevronRight size={26} aria-hidden="true" />
                   </button>
                 </div>
+                <button type="button" className="station-directory-link" onClick={showCollection} aria-controls="station-collection">
+                  <ListMusic size={16} aria-hidden="true" />
+                  <span className="sr-only">Ver lista de estaciones.</span>
+                  Estación {activeIndex + 1} de {radio.stations.length}
+                </button>
               </div>
             </section>
 
