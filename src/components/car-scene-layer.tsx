@@ -23,8 +23,10 @@ function hasWebGL() {
   }
 }
 
-export function CarSceneLayer({ playing, onReadyChange }: {
+export function CarSceneLayer({ playing, speedKmh, onSpeedChange, onReadyChange }: {
   playing: boolean;
+  speedKmh: number;
+  onSpeedChange: (speedKmh: number) => void;
   onReadyChange: (ready: boolean) => void;
 }) {
   const desktop = useSyncExternalStore(subscribeDesktop, () => window.matchMedia(DESKTOP).matches, () => false);
@@ -57,7 +59,8 @@ export function CarSceneLayer({ playing, onReadyChange }: {
   if (!desktop || phase === "idle" || phase === "failed") return null;
   return (
     <div className={`car-world${sceneReady ? " is-ready" : ""}`} aria-hidden="true">
-      <DrivingScene playing={playing} warming={phase !== "ready"} onReady={ready} onFail={fail} onContextLost={lost} onContextRestored={ready} />
+      <DrivingScene playing={playing} speedKmh={speedKmh} onSpeedChange={onSpeedChange} warming={phase !== "ready"}
+        onReady={ready} onFail={fail} onContextLost={lost} onContextRestored={ready} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="car-overlay" src="/car/car.webp" width={1280} height={720} alt=""
         onLoad={() => setOverlayReady(true)} onError={fail} />

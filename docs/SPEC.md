@@ -103,9 +103,11 @@ El recorrido 3D se muestra en escritorio cuando el área de la página es al men
 
 **Acabado del primer tramo.** Coloca una luz solar cálida y baja, relleno azul del cielo y una leve bruma en la distancia. Trabaja el pavimento con textura de grano y desgaste, y haz visibles las sombras de contacto bajo las palmeras. Reserva los reflejos suaves para los cristales. Limita el neón a algunos rótulos con nombres ficticios para que sigan dominando las fachadas y el atardecer. La cámara permanece a altura de conductor, con el horizonte estable y el punto de fuga alineado con la cabina. Los elementos cercanos cruzan el parabrisas más rápido que el horizonte. Registra la procedencia de cada modelo y textura.
 
-**Recorrido continuo.** La cámara avanza a altura de conductor y velocidad estable. Reubica los tramos de calle después de que queden detrás de la cámara, conservando la continuidad de carriles y aceras. Para esta entrega el trayecto es automático y la interacción del usuario se centra en la radio.
+**Recorrido continuo.** El trayecto avanza automáticamente a altura de conductor. El vehículo acelera y desacelera suavemente alrededor de la velocidad base, con cambios aleatorios entre 20 y 120 km/h. El control «Velocidad base» empieza en 65 km/h y permite ajustarla en pasos de 5 km/h. Al volver de la radio conserva el valor seleccionado. Los tramos de calle se reubican después de quedar detrás de la cámara, conservando la continuidad de carriles y aceras.
 
 **Pausa y recuperación.** Comparte geometrías y materiales para palmeras, fachadas y otros elementos repetidos. Limita la resolución interna del canvas en pantallas de alta densidad. Incluye «Pausar paisaje» y «Reanudar paisaje» con efecto exclusivo sobre la escena. Detén el render continuo al abrir el tablero o cuando la pestaña deje de estar visible. Al volver al volante, conserva la posición del recorrido y el estado de la pausa manual. La radio se mantiene operativa durante la carga, con movimiento reducido o si WebGL o la capa de cabina fallan. [Canvas de React Three Fiber](https://r3f.docs.pmnd.rs/api/canvas) · [Render bajo demanda](https://r3f.docs.pmnd.rs/advanced/scaling-performance)
+
+**Velocímetro.** En la vista del volante, la aguja y la cifra del tablero muestran la velocidad del recorrido en km/h. Al pausar el paisaje, la lectura baja a cero.
 
 ### Criterios de aceptación visual y funcional
 

@@ -5,8 +5,6 @@
 import * as THREE from "three";
 import { SEG_COUNT, SEG_LEN, createStreetKit } from "./street";
 
-/** Cruising speed in m/s (~40 km/h). The camera never moves: the world scrolls past it. */
-export const SPEED = 11;
 export const FOG_COLOR = "#f3b295";
 export const FOG_NEAR = 70;
 export const FOG_FAR = 255;
@@ -117,7 +115,7 @@ const SEA_FRAG = /* glsl */ `
 export interface World {
   group: THREE.Group;
   stats: { recycles: number; distance: number; segmentSpawnDistance: number; seamError: number };
-  update(dt: number): void;
+  update(dt: number, speedMps: number): void;
   dispose(): void;
 }
 
@@ -169,8 +167,8 @@ export function createWorld(anisotropy: number): World {
   }
   const RECYCLE_Z = SEG_LEN * 1.5;
 
-  function update(dt: number) {
-    const d = SPEED * dt;
+  function update(dt: number, speedMps: number) {
+    const d = speedMps * dt;
     stats.distance += d;
     for (const seg of segments) {
       seg.position.z += d;

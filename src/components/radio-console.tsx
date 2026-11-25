@@ -1,12 +1,13 @@
 "use client";
 
-import { startTransition, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import {
   AudioLines, ChevronLeft, ChevronRight, Copy, ListMusic, LockKeyhole, Pencil,
   Pause, Play, Plus, Radio, RadioTower, Share2, Trash2, X,
 } from "lucide-react";
 import { useScreenTransition } from "@/hooks/use-screen-transition";
 import { useStations } from "@/hooks/use-stations";
+import { MAX_SPEED_KMH, MIN_SPEED_KMH } from "@/lib/driving-speed";
 import { DEFAULT_KEY, PROVIDERS, matchingPresetKey, nextPlayable, shareHref, stationKey, stationWindowStart } from "@/lib/stations";
 import type { Provider, Station } from "@/types/station";
 import { CarSceneLayer } from "./car-scene-layer";
@@ -89,11 +90,27 @@ export function RadioConsole() {
   const focusTarget = useRef<"open" | "station" | "collection" | null>(null);
   const look = useRef<HTMLDivElement>(null);
   const consolePanel = useRef<HTMLDivElement>(null);
+  const speedometer = useRef<HTMLDivElement>(null);
+  const speedReadout = useRef<HTMLElement>(null);
   const [scenePaused, setScenePaused] = useState(false);
+  const [speedKmh, setSpeedKmh] = useState(65);
   const tabHidden = useSyncExternalStore(subscribeVisibility, () => document.hidden, () => false);
   const transition = useScreenTransition(canDrive ? view : null, consolePanel, openButton);
   // The landscape only moves while the cockpit is in view, the tab is visible and the user has not paused it.
   const sceneRunning = view === "car" && !tabHidden && !scenePaused;
+  const updateSpeedometer = useCallback((speed: number) => {
+    const gauge = speedometer.current;
+    const readout = speedReadout.current;
+    if (!gauge || !readout) return;
+
+    gauge.style.setProperty("--needle-angle", `${-120 + speed / MAX_SPEED_KMH * 240}deg`);
+    const value = String(Math.round(speed));
+    if (readout.textContent === value) return;
+
+    readout.textContent = value;
+    gauge.setAttribute("aria-valuenow", value);
+    gauge.setAttribute("aria-valuetext", `${value} km/h`);
+  }, []);
   const { preview } = radio;
   const activeKey = stationKey(radio.active);
   const activeIndex = radio.stations.findIndex((station) => stationKey(station) === activeKey);
@@ -156,7 +173,7 @@ export function RadioConsole() {
     function onMove(event: PointerEvent) {
       if (event.pointerType !== "mouse" || !wide.matches) return;
       // Hold the view still over controls so the button does not drift away from the cursor.
-      if (event.target instanceof Element && event.target.closest(".open-radio, .scene-toggle, .site-header, .cabin")) return;
+      if (event.target instanceof Element && event.target.closest(".open-radio, .scene-controls, .site-header, .cabin")) return;
       targetX = (event.clientX / window.innerWidth) * 2 - 1;
       targetY = (event.clientY / window.innerHeight) * 2 - 1;
       if (!frame) frame = requestAnimationFrame(tick);
@@ -266,7 +283,14 @@ export function RadioConsole() {
           <section className="car-scene" aria-label="Cabina de conducción" aria-hidden={!canDrive || undefined}>
             <div className="car-look" ref={look}>
               <div className="car-frame">
-                <CarSceneLayer playing={sceneRunning} onReadyChange={setCanDrive} />
+                <CarSceneLayer playing={sceneRunning} speedKmh={speedKmh} onSpeedChange={updateSpeedometer} onReadyChange={setCanDrive} />
+              </div>
+              <div ref={speedometer} className="car-speedometer" hidden={view !== "car"}
+                role="meter" aria-label="Velocidad del vehículo" aria-valuemin={0} aria-valuemax={MAX_SPEED_KMH}
+                aria-valuenow={0} aria-valuetext="0 km/h">
+                <span className="speedometer-ticks" aria-hidden="true" />
+                <span className="speedometer-needle" aria-hidden="true" />
+                <span className="speedometer-readout" aria-hidden="true"><strong ref={speedReadout}>0</strong> km/h</span>
               </div>
               <div className="car-band" aria-hidden={view === "radio" || undefined}>
                 <button
@@ -290,14 +314,21 @@ export function RadioConsole() {
                 </button>
               </div>
             </div>
-            {canDrive && (
-              <button
-                type="button" className="scene-toggle" disabled={view !== "car"}
-                onClick={() => setScenePaused((paused) => !paused)}
-              >
-                {scenePaused ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}
-                {scenePaused ? "Reanudar paisaje" : "Pausar paisaje"}
-              </button>
+            {canDrive && view === "car" && (
+              <div className="scene-controls">
+                <label className="scene-speed">
+                  Velocidad base <span aria-hidden="true">{speedKmh} km/h</span>
+                  <input
+                    type="range" min={MIN_SPEED_KMH} max={MAX_SPEED_KMH} step={5} value={speedKmh}
+                    aria-valuetext={`${speedKmh} km/h`}
+                    onChange={(event) => setSpeedKmh(event.currentTarget.valueAsNumber)}
+                  />
+                </label>
+                <button type="button" className="scene-toggle" onClick={() => setScenePaused((paused) => !paused)}>
+                  {scenePaused ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}
+                  {scenePaused ? "Reanudar paisaje" : "Pausar paisaje"}
+                </button>
+              </div>
             )}
           </section>
           {(radio.invalidShare || radio.storageUnavailable) && (

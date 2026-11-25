@@ -476,6 +476,59 @@ button:disabled { cursor: default; opacity: .5; }
   position: absolute; left: 50%; top: 50%; width: var(--w); aspect-ratio: 16 / 9; transform: translate(-50%, -50%);
 }
 .car-frame img { display: block; width: 100%; height: 100%; }
+/* Centre the gauge over the speedometer in the cockpit image. */
+.car-speedometer {
+  position: absolute;
+  left: calc(50% - .00625 * var(--w));
+  top: calc(50% + .23 * var(--w) * 9 / 16);
+  width: calc(.106 * var(--w));
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 1px solid #c4977266;
+  border-radius: 50%;
+  background: radial-gradient(circle, #22201c, #141310 68%, #080807);
+  box-shadow: inset 0 0 0 2px #0a0908;
+  pointer-events: none;
+}
+.speedometer-ticks {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from -121.5deg, #f4d5aa 0deg 3deg, transparent 3deg 20deg);
+  mask-image: radial-gradient(circle, transparent 60%, #000 61% 70%, transparent 71%),
+    conic-gradient(from -121.5deg, #000 243deg, transparent 243deg);
+  mask-composite: intersect;
+}
+.speedometer-needle {
+  position: absolute;
+  inset: 17% auto 50% calc(50% - 1px);
+  width: 2px;
+  transform: rotate(var(--needle-angle, -120deg));
+  transform-origin: center bottom;
+  border-radius: 2px;
+  background: var(--coral);
+  box-shadow: 0 0 .35rem #ff8c7299;
+}
+.speedometer-needle::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, 50%);
+  border-radius: 50%;
+  background: var(--coral);
+}
+.speedometer-readout {
+  position: absolute;
+  inset: 65% 0 auto;
+  text-align: center;
+  color: #f4d5aa;
+  font: 600 clamp(.58rem, calc(.009 * var(--w)), .9rem)/1 var(--mono);
+  white-space: nowrap;
+}
+.speedometer-readout strong { color: #fff2df; font-size: 1.5em; font-variant-numeric: tabular-nums; }
 /* The black console screen spans 66-94% x 60-84% of the image; the button sits at 80% / 72% of that same box. */
 .car-band {
   position: absolute; left: calc(50% + .3 * var(--w)); top: calc(50% + .22 * var(--w) * 9 / 16);
@@ -679,12 +732,16 @@ html:has(.app[data-view="car"]) { overflow: hidden; }
 .car-world > div { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
 .car-world canvas { display: block; width: 100% !important; height: 100% !important; }
 
-.scene-toggle {
+.scene-controls {
   position: absolute;
   z-index: 3;
-  left: 50%;
+  right: 1.5rem;
   bottom: 2.2rem;
-  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.scene-speed, .scene-toggle {
   display: inline-flex;
   align-items: center;
   gap: .5rem;
@@ -696,14 +753,20 @@ html:has(.app[data-view="car"]) { overflow: hidden; }
   color: var(--text);
   font: inherit;
   font-size: .85rem;
-  cursor: pointer;
   backdrop-filter: blur(6px);
+}
+.scene-toggle {
+  cursor: pointer;
   transition: border-color 150ms, background-color 150ms;
+}
+.scene-speed span { color: var(--teal); font: 700 .8rem var(--mono); white-space: nowrap; }
+.scene-speed input { width: 6rem; min-height: 2.25rem; accent-color: var(--teal); cursor: pointer; }
+@media (max-width: 58rem) {
+  .scene-controls { flex-direction: column; align-items: end; }
 }
 .scene-toggle:hover:not(:disabled) { border-color: var(--teal); background: #121826eb; }
 .scene-toggle:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
 .scene-toggle svg { color: var(--teal); }
-.stage[data-view="radio"] .scene-toggle { visibility: hidden; }
 
 .radio-ghost {
   position: fixed;

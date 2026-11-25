@@ -7,6 +7,9 @@
 - [ ] Alternar Spotify y YouTube y comprobar que el dial, la colección y el reproductor correspondan al proveedor activo. Probar la nueva selección de Cocoteo FM, el salto de videos bloqueados y un enlace compartido de video.
 - [ ] Cambiar entre Spotify y YouTube desde CircoLoco para comprobar que se conserva la emisora. Desde V-Rock en Spotify, comprobar el aviso y el acceso al catálogo de YouTube.
 - [ ] Comprobar que la lista arranque cerrada en escritorio y móvil, que el contador permita abrirla y que la rueda mantenga hasta ocho opciones al final del catálogo.
+- [ ] Ajustar la velocidad del vehículo y comprobar que el cambio se aplique al instante y se conserve al volver de la radio.
+- [ ] Comprobar que el vehículo acelere y desacelere suavemente desde el inicio del recorrido.
+- [ ] Comprobar que el velocímetro siga la velocidad del recorrido y marque cero al pausar el paisaje.
 
 ## Ideas para contribuir
 
