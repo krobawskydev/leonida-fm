@@ -17,7 +17,7 @@ npm run dev
 
 Abre [localhost:3000](http://localhost:3000). En «Mis estaciones» puedes añadir una playlist, darle un nombre y guardar la estación. Usa los controles del reproductor para escucharla.
 
-En escritorio, la vista inicial muestra el recorrido costero a través del parabrisas. Usa «Pausar paisaje» para detener la avenida y «Abrir radio» para desplegar el dial. Al volver al volante, el recorrido continúa desde la misma posición si estaba en marcha. En móvil, con movimiento reducido o si WebGL falla, la radio sigue disponible sobre la cabina estática.
+En pantallas compatibles, el recorrido costero aparece cuando la escena 3D está lista. Usa «Pausar paisaje» para detener la avenida y «Abrir radio» para desplegar el dial. Al volver al volante, el recorrido continúa desde la misma posición si estaba en marcha. La radio se abre directamente en móvil y cuando la escena 3D está cargando, no cabe o no se puede mostrar.
 
 ## Verificar y compilar
 

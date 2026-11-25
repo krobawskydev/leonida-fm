@@ -441,6 +441,7 @@ button:disabled { cursor: default; opacity: .5; }
   min-height: 100svh;
   padding: clamp(6.75rem, 16svh, 10rem) 0 2rem;
 }
+.stage[data-view="radio"][data-radio-only] { min-height: 0; padding-top: calc(4.5rem + env(safe-area-inset-top)); }
 .stage[data-view="radio"] .car-scene {
   position: absolute;
   inset: 0 0 auto;
@@ -616,18 +617,6 @@ button:disabled { cursor: default; opacity: .5; }
 .tray[data-concealed] { position: absolute; inset: 0 auto auto 0; width: min(20rem, 100%); visibility: hidden; pointer-events: none; }
 
 @media (max-width: 40rem), (max-aspect-ratio: 3 / 2) {
-  .car-scene { container-type: normal; display: flex; flex-direction: column; }
-  .car-look { display: contents; }
-  .car-frame { position: relative; left: auto; top: auto; width: 100%; aspect-ratio: auto; transform: none; flex: 1 1 0; min-height: 0; }
-  .car-frame img { object-fit: cover; object-position: 47% 50%; }
-  .car-band {
-    position: static; transform: none; padding: .7rem 1rem calc(2.6rem + env(safe-area-inset-bottom));
-    background: linear-gradient(180deg, #0b0f18, #07090f); border-top: 1px solid #5b397b66;
-  }
-  .open-radio { width: 100%; height: 5.35rem; padding: .55rem .75rem; gap: .75rem; }
-  .car-preview-dial { width: 3.65rem; font-size: 1.2rem; }
-  .car-preview-summary strong { font-size: .92rem; }
-  .stage[data-view="car"] .cabin { left: .75rem; right: .75rem; bottom: calc(9.2rem + env(safe-area-inset-bottom)); width: auto; }
   .stage[data-view="radio"] { padding-top: clamp(7.25rem, 22svh, 11rem); }
   .radio-toolbar .secondary-button { padding-inline: .6rem; }
   .cabin .tray .player-section { padding: .75rem; }
@@ -637,6 +626,8 @@ button:disabled { cursor: default; opacity: .5; }
   *, *::before, *::after { transition-duration: 0s !important; }
   .car-look { transform: none; }
 }
+
+.stage[data-radio-only] .car-scene { visibility: hidden; }
 
 /* Car view: exactly one screen, no page scroll. Footer disclaimer overlays the scene. */
 html:has(.app[data-view="car"]) { overflow: hidden; }
@@ -662,17 +653,10 @@ html:has(.app[data-view="car"]) { overflow: hidden; }
   inset: 0;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 700ms ease;
-  /* Windshield glass traced on the cockpit photograph (percent of the 16:9 image). The mirror stays photographic. */
-  clip-path: polygon(
-    13.1% 9.5%, 14% 6.2%, 16% 3.7%, 19% 2.6%, 30% 1.9%, 50% 2%, 70% 2%, 74.4% 2.3%, 74.4% 7.3%, 69% 7.6%, 66.4% 10%,
-    65.9% 13.2%, 67.5% 17%, 72% 19.5%, 80% 19.6%, 85.5% 18%, 88.1% 14.5%, 88.3% 10.8%, 86% 8%, 78% 6.8%, 76.6% 7.2%, 76.6% 2.6%,
-    80% 3.2%, 90% 4.2%, 100% 5%, 100% 57.4%, 94% 56%, 88% 54.6%, 80% 53.3%, 72% 53%, 64% 52.7%, 56% 52.2%, 52% 51.6%, 46% 51.2%,
-    40% 52.2%, 37% 51.2%, 34% 50.1%, 29.5% 50.1%, 25% 51.2%, 20.6% 53%, 15.1% 57.3%, 14.7% 53.3%, 14.2% 44.4%, 13.75% 35.6%,
-    13.1% 26.7%, 13.1% 17.8%
-  );
+  isolation: isolate;
 }
 .car-world.is-ready { opacity: 1; }
+.car-overlay { position: absolute; inset: 0; z-index: 1; }
 .car-world > div { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
 .car-world canvas { display: block; width: 100% !important; height: 100% !important; }
 

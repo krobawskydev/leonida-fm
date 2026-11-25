@@ -9,7 +9,7 @@
 
 - [ ] Probar el tablero con un lector de pantalla y medir el contraste de «Abrir radio».
 - [ ] Implementar la [cortinilla de sintonización](SPEC.md#p2--cortinilla-de-sintonización). Verificar el cambio desde el dial y la lista, los cambios rápidos, el movimiento reducido y la continuidad del reproductor.
-- [ ] Adaptar el recorrido 3D a móvil y medir su rendimiento con la radio activa en un teléfono físico. Consulta los [criterios del Modo Car](SPEC.md#entrega-2--avenida-3d-en-tiempo-real).
+- [ ] Verificar el acceso directo a la radio, la colección y los enlaces compartidos en móvil y con el recorrido 3D desactivado.
 
 ## Verificación registrada
 

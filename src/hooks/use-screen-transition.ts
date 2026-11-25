@@ -13,7 +13,7 @@ const DESKTOP_MOTION = `${MOTION} and (min-width: 40.0625rem)`;
  * Everything is reverted when the view changes again, so rapid toggling cannot leave a half-played state.
  * With reduced motion the views switch with no movement at all.
  */
-export function useScreenTransition(view: "car" | "radio", panel: RefObject<HTMLElement | null>, openButton: RefObject<HTMLElement | null>) {
+export function useScreenTransition(view: "car" | "radio" | null, panel: RefObject<HTMLElement | null>, openButton: RefObject<HTMLElement | null>) {
   const origin = useRef<DOMRect | null>(null);
   const closing = useRef<DOMRect | null>(null);
 

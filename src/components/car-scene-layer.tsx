@@ -3,10 +3,8 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
-// The 3D chunk (three.js + react-three-fiber) is only fetched once the desktop cockpit is on screen.
+// Load the 3D chunk only on displays that can show the driving view.
 const DrivingScene = dynamic(() => import("./driving-scene"), { ssr: false });
-
-export type SceneStatus = "static" | "loading" | "ready";
 
 const DESKTOP = "(hover: hover) and (pointer: fine) and (min-width: 40.0625rem) and (min-aspect-ratio: 1501 / 1000) and (prefers-reduced-motion: no-preference)";
 
@@ -25,10 +23,13 @@ function hasWebGL() {
   }
 }
 
-/** Static photo stays visible until the first 3D frame is drawn; any failure drops back to it. */
-export function CarSceneLayer({ playing, onStatus }: { playing: boolean; onStatus: (status: SceneStatus) => void }) {
+export function CarSceneLayer({ playing, onReadyChange }: {
+  playing: boolean;
+  onReadyChange: (ready: boolean) => void;
+}) {
   const desktop = useSyncExternalStore(subscribeDesktop, () => window.matchMedia(DESKTOP).matches, () => false);
   const [phase, setPhase] = useState<"idle" | "mounted" | "ready" | "lost" | "failed">("idle");
+  const [overlayReady, setOverlayReady] = useState(false);
 
   // Leaving the desktop layout unmounts the canvas, so the next one must earn "ready" again with its own first frame.
   if (!desktop && (phase === "mounted" || phase === "ready" || phase === "lost")) setPhase("idle");
@@ -46,8 +47,8 @@ export function CarSceneLayer({ playing, onStatus }: { playing: boolean; onStatu
     return () => window.clearTimeout(timer);
   }, [desktop, phase]);
 
-  const status: SceneStatus = !desktop || phase === "failed" || phase === "lost" ? "static" : phase === "ready" ? "ready" : "loading";
-  useEffect(() => { onStatus(status); }, [status, onStatus]);
+  const sceneReady = desktop && phase === "ready" && overlayReady;
+  useEffect(() => { onReadyChange(sceneReady); }, [sceneReady, onReadyChange]);
 
   const ready = useCallback(() => setPhase((p) => (p === "mounted" || p === "lost" ? "ready" : p)), []);
   const fail = useCallback(() => setPhase("failed"), []);
@@ -55,8 +56,11 @@ export function CarSceneLayer({ playing, onStatus }: { playing: boolean; onStatu
 
   if (!desktop || phase === "idle" || phase === "failed") return null;
   return (
-    <div className={`car-world${phase === "ready" ? " is-ready" : ""}`} data-scene={phase} aria-hidden="true">
+    <div className={`car-world${sceneReady ? " is-ready" : ""}`} aria-hidden="true">
       <DrivingScene playing={playing} warming={phase !== "ready"} onReady={ready} onFail={fail} onContextLost={lost} onContextRestored={ready} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="car-overlay" src="/car/car.webp" width={1280} height={720} alt=""
+        onLoad={() => setOverlayReady(true)} onError={fail} />
     </div>
   );
 }

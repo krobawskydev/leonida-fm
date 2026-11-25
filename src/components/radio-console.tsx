@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { startTransition, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import {
   AudioLines, ChevronLeft, ChevronRight, Copy, ListMusic, LockKeyhole, Pencil,
   Pause, Play, Plus, Radio, RadioTower, Share2, Trash2, X,
@@ -9,7 +9,7 @@ import { useScreenTransition } from "@/hooks/use-screen-transition";
 import { useStations } from "@/hooks/use-stations";
 import { DEFAULT_KEY, PROVIDERS, nextPlayable, shareHref, stationKey } from "@/lib/stations";
 import type { Station } from "@/types/station";
-import { CarSceneLayer, type SceneStatus } from "./car-scene-layer";
+import { CarSceneLayer } from "./car-scene-layer";
 import { RadioPlayer } from "./radio-player";
 import { StationDialog } from "./station-dialog";
 
@@ -74,7 +74,9 @@ export function RadioConsole() {
   const [editor, setEditor] = useState<"new" | Station>();
   const [shared, setShared] = useState<Station>();
   const failed = useRef(new Set<string>());
-  const [view, setView] = useState<"car" | "radio">("car");
+  const [desktopView, setView] = useState<"car" | "radio">("car");
+  const [canDrive, setCanDrive] = useState(false);
+  const view = canDrive ? desktopView : "radio";
   const [collectionOpen, setCollectionOpen] = useState(false);
   const openButton = useRef<HTMLButtonElement>(null);
   const collectionButton = useRef<HTMLButtonElement>(null);
@@ -83,11 +85,9 @@ export function RadioConsole() {
   const focusTarget = useRef<"open" | "station" | "collection" | null>(null);
   const look = useRef<HTMLDivElement>(null);
   const consolePanel = useRef<HTMLDivElement>(null);
-  const [sceneStatus, setSceneStatus] = useState<SceneStatus>("static");
   const [scenePaused, setScenePaused] = useState(false);
   const tabHidden = useSyncExternalStore(subscribeVisibility, () => document.hidden, () => false);
-  const transition = useScreenTransition(view, consolePanel, openButton);
-  const onSceneStatus = useCallback((status: SceneStatus) => setSceneStatus(status), []);
+  const transition = useScreenTransition(canDrive ? view : null, consolePanel, openButton);
   // The landscape only moves while the cockpit is in view, the tab is visible and the user has not paused it.
   const sceneRunning = view === "car" && !tabHidden && !scenePaused;
   const { preview } = radio;
@@ -113,13 +113,14 @@ export function RadioConsole() {
         collectionButton.current?.focus();
         return;
       }
+      if (!canDrive) return;
       transition.markClosing();
       focusTarget.current = "open";
       setView("car");
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [view, collectionOpen, transition]);
+  }, [view, collectionOpen, canDrive, transition]);
 
   // Keep the last camera position while the radio is open.
   useEffect(() => {
@@ -154,11 +155,15 @@ export function RadioConsole() {
     };
   }, [view]);
 
-  // A shared link or an invalid share needs the radio view's preview and notices.
-  const needsRadio = radio.ready && (!!radio.preview || radio.invalidShare);
   useEffect(() => {
-    if (needsRadio) startTransition(() => setView("radio"));
-  }, [needsRadio]);
+    if (new URLSearchParams(window.location.search).has("station")) {
+      startTransition(() => setView("radio"));
+    }
+  }, []);
+
+  function keepRadioOpen() {
+    if (!canDrive) setView("radio");
+  }
 
   function openRadio(target: "station" | "collection" = "station") {
     if (view === "radio") {
@@ -167,16 +172,20 @@ export function RadioConsole() {
     }
     if (target === "station") transition.markOpening(openButton.current?.getBoundingClientRect() ?? null);
     focusTarget.current = target;
+    setCollectionOpen(target === "collection");
     setView("radio");
   }
 
   function toggleCollection() {
+    if (view === "car") {
+      openRadio("collection");
+      return;
+    }
     if (collectionOpen) {
       setCollectionOpen(false);
       return;
     }
-    if (view === "car") openRadio("collection");
-    else focusTarget.current = "collection";
+    focusTarget.current = "collection";
     setCollectionOpen(true);
   }
 
@@ -225,7 +234,7 @@ export function RadioConsole() {
           </div>
           <button
             ref={collectionButton} type="button" className="header-link"
-            aria-controls="station-collection" aria-expanded={collectionOpen}
+            aria-controls="station-collection" aria-expanded={view === "radio" && collectionOpen}
             onClick={toggleCollection}
           >
             <ListMusic size={17} aria-hidden="true" /> Mis estaciones
@@ -234,17 +243,12 @@ export function RadioConsole() {
       </header>
 
       <main className="car-main">
-        <div className="stage" data-view={view}>
-          <section className="car-scene" aria-label="Cabina de conducción">
-            <h1 className="sr-only">Leonida FM · Your World. Your Frequency.</h1>
+        <h1 className="sr-only">Leonida FM · Your World. Your Frequency.</h1>
+        <div className="stage" data-view={view} data-radio-only={!canDrive || undefined}>
+          <section className="car-scene" aria-label="Cabina de conducción" aria-hidden={!canDrive || undefined}>
             <div className="car-look" ref={look}>
               <div className="car-frame">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/car/cockpit-sunset.webp" width={1600} height={900} fetchPriority="high"
-                  alt="Vista desde el asiento del conductor de un descapotable al atardecer, con una avenida costera de palmeras y edificios art déco al frente."
-                />
-                <CarSceneLayer playing={sceneRunning} onStatus={onSceneStatus} />
+                <CarSceneLayer playing={sceneRunning} onReadyChange={setCanDrive} />
               </div>
               <div className="car-band" aria-hidden={view === "radio" || undefined}>
                 <button
@@ -268,7 +272,7 @@ export function RadioConsole() {
                 </button>
               </div>
             </div>
-            {sceneStatus === "ready" && (
+            {canDrive && (
               <button
                 type="button" className="scene-toggle" disabled={view !== "car"}
                 onClick={() => setScenePaused((paused) => !paused)}
@@ -284,12 +288,14 @@ export function RadioConsole() {
               {radio.storageUnavailable && <p>El almacenamiento del navegador no está disponible. Los cambios durarán esta sesión.</p>}
             </div>
           )}
-          <div className="cabin" id="car-radio" ref={consolePanel}>
+          <div className="cabin" id="car-radio" ref={consolePanel} onFocusCapture={keepRadioOpen}>
             <div className="radio-bezel" aria-hidden="true" />
             <div className="radio-toolbar" hidden={view !== "radio"}>
-              <button type="button" className="secondary-button" onClick={backToCar}>
-                <ChevronLeft size={16} aria-hidden="true" /> Volver al volante
-              </button>
+              {canDrive && (
+                <button type="button" className="secondary-button" onClick={backToCar}>
+                  <ChevronLeft size={16} aria-hidden="true" /> Volver al volante
+                </button>
+              )}
               <button
                 type="button" className="secondary-button share-button" disabled={!radio.ready}
                 onClick={() => setShared(radio.active)}
