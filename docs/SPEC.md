@@ -54,7 +54,7 @@ La entrega se acepta cuando la playlist inicial se muestra con el embed oficial,
 
 ## P2 · Cortinilla de sintonización
 
-Al cambiar de estación con el dial o la lista, muestra durante unos dos segundos una línea de texto en el sintonizador con la frecuencia, el nombre de la nueva estación y una frase editorial. Ejemplo para la estación inicial.
+Al cambiar de estación desde la radio, la aguja se desplaza a la nueva frecuencia. El sintonizador muestra la frecuencia y el nombre de la emisora junto a una frase editorial que aparece durante unos dos segundos. Ejemplo para la estación inicial.
 
 > 88.1 FM · Leonida Radio · La ciudad sigue despierta
 

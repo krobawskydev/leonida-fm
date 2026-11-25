@@ -188,6 +188,19 @@ button:disabled { cursor: default; opacity: .5; }
   max-width: 100%; font-size: clamp(.95rem, 5cqw, 1.5rem); line-height: 1.15;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
+.tuned-station { position: relative; min-width: 0; }
+.tuning-cue {
+  position: absolute;
+  inset: calc(100% + .25rem) 0 auto;
+  color: #f4d5aa;
+  font: 650 clamp(.7rem, 3.4cqw, .85rem)/1.15 var(--mono);
+  animation: tuning-cue 2s ease-out both;
+}
+@keyframes tuning-cue {
+  0% { opacity: 0; transform: translateY(.25rem); }
+  12%, 85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; }
+}
 .dial { min-width: 0; padding: .55rem .4rem .2rem; }
 .dial-ruler { position: relative; display: flex; justify-content: space-between; align-items: end; height: 1.4rem; border-bottom: 1px solid #54566b; }
 .dial-ruler i { display: block; width: 1px; height: .45rem; background: #7a6f93; }
@@ -201,7 +214,11 @@ button:disabled { cursor: default; opacity: .5; }
   border-radius: 3px;
   background: var(--coral);
   box-shadow: 0 0 .55rem var(--coral), 0 0 1.2rem #ff8c7266;
-  transition: left 190ms ease-out;
+}
+.tuner[data-tuning] .dial-needle { transition: left 320ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .tuner[data-tuning] .dial-needle { transition: none; }
+  .tuning-cue { animation: none; }
 }
 .dial-labels { display: flex; justify-content: space-between; margin-top: .37rem; color: #b8b8ca; font: .7rem var(--mono); }
 .station-directory-link {

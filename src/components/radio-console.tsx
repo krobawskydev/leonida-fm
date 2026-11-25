@@ -21,6 +21,7 @@ function initials(name: string) {
 
 const ticks = Array.from({ length: 49 }, (_, index) => index);
 const WHEEL_STATIONS = 8;
+const TUNING_CUE_MS = 2000;
 const providers = Object.entries(PROVIDERS) as [Provider, string][];
 
 function ShareDialog({ station, onClose }: { station: Station; onClose: () => void }) {
@@ -113,12 +114,25 @@ export function RadioConsole() {
   }, []);
   const { preview } = radio;
   const activeKey = stationKey(radio.active);
+  const [tuning, setTuning] = useState<{ key: string; visible: boolean } | null>(null);
+  if (radio.ready && tuning?.key !== activeKey) {
+    setTuning({ key: activeKey, visible: tuning !== null && view === "radio" });
+  }
+  const showTuningCue = tuning?.key === activeKey && tuning.visible;
   const activeIndex = radio.stations.findIndex((station) => stationKey(station) === activeKey);
   const wheelStart = stationWindowStart(activeIndex, radio.stations.length, WHEEL_STATIONS);
   const wheelStations = radio.stations.slice(wheelStart, wheelStart + WHEEL_STATIONS);
   const wheelSlots = wheelStations.length + 1;
   const frequency = (88.1 + 19.8 * (activeIndex / Math.max(5, radio.stations.length - 1))).toFixed(1);
   const dialPosition = ((Number(frequency) - 88) / 20) * 100;
+
+  useEffect(() => {
+    if (!tuning?.visible) return;
+    const timeout = window.setTimeout(() => {
+      setTuning((current) => current === tuning ? { ...tuning, visible: false } : current);
+    }, TUNING_CUE_MS);
+    return () => window.clearTimeout(timeout);
+  }, [tuning]);
 
   useEffect(() => {
     const target = focusTarget.current;
@@ -373,7 +387,8 @@ export function RadioConsole() {
               )}
             </div>
 
-            <section className="screen tuner" aria-labelledby="active-station-heading" hidden={view !== "radio"}>
+            <section className="screen tuner" aria-labelledby="active-station-heading" hidden={view !== "radio"}
+              data-tuning={showTuningCue || undefined}>
               <div className="tuner-content">
                 <div className="dial-controls">
                   <button
@@ -422,12 +437,15 @@ export function RadioConsole() {
                     >
                       <Plus size={20} aria-hidden="true" />
                     </button>
-                    <div className="now-tuned" aria-live="polite">
-                      <div className="signal">
-                        <span>{frequency}</span> <b>FM</b>
+                    <div className="now-tuned">
+                      <div className="tuned-station" aria-live="polite">
+                        <div className="signal">
+                          <span>{frequency}</span> <b>FM</b>
+                        </div>
+                        <h2 id="active-station-heading" ref={stationHeading} tabIndex={-1}>{radio.active.name}</h2>
+                        {radio.preview && <span className="preview-label">Estación compartida</span>}
+                        {showTuningCue && <span key={activeKey} className="tuning-cue" aria-hidden="true">La ciudad sigue despierta</span>}
                       </div>
-                      <h2 id="active-station-heading" ref={stationHeading} tabIndex={-1}>{radio.active.name}</h2>
-                      {radio.preview && <span className="preview-label">Estación compartida</span>}
                     </div>
                   </div>
                   <div className="dial" aria-hidden="true">

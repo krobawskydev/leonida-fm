@@ -14,7 +14,7 @@
 ## Ideas para contribuir
 
 - [ ] Probar el tablero con un lector de pantalla y medir el contraste de «Abrir radio».
-- [ ] Implementar la [cortinilla de sintonización](SPEC.md#p2--cortinilla-de-sintonización). Verificar el cambio desde el dial y la lista, los cambios rápidos, el movimiento reducido y la continuidad del reproductor.
+- [ ] Verificar la [cortinilla de sintonización](SPEC.md#p2--cortinilla-de-sintonización) al cambiar desde el dial y la lista, al cambiar rápido y con movimiento reducido. Comprobar que el reproductor siga cargando al seleccionar la emisora.
 - [ ] Verificar el acceso directo a la radio, la colección y los enlaces compartidos en móvil y con el recorrido 3D desactivado.
 
 ## Verificación registrada
