@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  DEFAULT_KEY, DEFAULT_STATION, emptyRadio, nextPlayable, normalizeName, oembedProblem, parsePlaylist,
+  DEFAULT_KEY, DEFAULT_STATION, availableStations, emptyRadio, favoriteStationKey, nextPlayable, normalizeName, oembedProblem, parsePlaylist,
   parseStationUrl, providerUrl, readSavedRadio, readSharedStation, shareHref, stationCollection,
-  stationForProvider, stationKey, stationWindowStart, youtubeOembedUrl,
+  saveTunedStation, stationForProvider, stationKey, stationProfile, stationWindowStart, youtubeOembedUrl,
 } from "../src/lib/stations.ts";
 import type { Station } from "../src/types/station.ts";
 import { DEFAULT_YOUTUBE_STATION, youtubeQueue } from "../src/lib/station-presets.ts";
@@ -117,6 +117,23 @@ test("los catálogos incluidos tienen enlaces válidos y conservan la estación 
   assert.notEqual(new URL(providerUrl(DEFAULT_YOUTUBE_STATION)).searchParams.get("v"), DEFAULT_YOUTUBE_STATION.videoId);
 });
 
+test("desbloquea las dos emisoras de Spotify tras sintonizar cinco emisoras principales distintas", () => {
+  const presets = stationCollection([]);
+  const main = presets.filter((station) => station.provider === "spotify" &&
+    stationKey(station) !== DEFAULT_KEY && !stationProfile(station)?.unlockable);
+  const count = (saved: ReturnType<typeof emptyRadio>) => availableStations(saved)
+    .filter((station) => station.provider === "spotify").length;
+  const initial = emptyRadio();
+  assert.equal(count(initial), 21);
+  assert.ok(availableStations(initial).some((station) => station.provider === "youtube" && station.name === "The Vault Radio"));
+  const four = main.slice(0, 4).reduce((saved, station) => saveTunedStation(saved, stationKey(station)), initial);
+  const repeated = saveTunedStation(saveTunedStation(four, DEFAULT_KEY), stationKey(main[0]));
+  assert.equal(count(repeated), 21);
+  const restored = readSavedRadio(JSON.stringify(repeated));
+  const unlocked = saveTunedStation(restored, stationKey(main[4]));
+  assert.equal(count(readSavedRadio(JSON.stringify(unlocked))), 23);
+});
+
 test("comparte nombre Unicode y conserva solo los datos de la estación", () => {
   const url = new URL(shareHref(custom, "https://leonida-fm.test/?other=private#hash"));
   assert.equal(url.origin, "https://leonida-fm.test");
@@ -151,6 +168,19 @@ test("recupera valores iniciales ante JSON corrupto, ausente o de versión desco
   for (const value of [null, "{mal", "null", '{"version":2,"stations":[]}']) {
     assert.deepEqual(readSavedRadio(value), emptyRadio());
   }
+});
+
+test("restaura favoritas guardadas y reúne las dos fuentes de una misma emisora", () => {
+  const presets = stationCollection([]);
+  const spotify = presets.find((station) => station.name === "CircoLoco Records Radio" && station.provider === "spotify");
+  const youtube = presets.find((station) => station.name === "CircoLoco Records Radio" && station.provider === "youtube");
+  assert.ok(spotify && youtube);
+  assert.equal(favoriteStationKey(youtube), favoriteStationKey(spotify));
+
+  const favoriteKeys = [stationKey(youtube), stationKey(spotify), stationKey(custom), "missing", null];
+  const saved = readSavedRadio(JSON.stringify({ ...emptyRadio(), stations: [custom], favoriteKeys }));
+  assert.deepEqual(saved.favoriteKeys, [stationKey(spotify), stationKey(custom)]);
+  assert.equal(saved.selectedKey, DEFAULT_KEY);
 });
 
 test("clasifica respuestas oEmbed de YouTube", () => {

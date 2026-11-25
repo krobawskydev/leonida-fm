@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import { ExternalLink, TriangleAlert } from "lucide-react";
 import { youtubeQueue } from "@/lib/station-presets";
 import { PROVIDERS, providerUrl } from "@/lib/stations";
 import type { Station } from "@/types/station";
+import { SpotifyEmbed, type SpotifyTuner } from "./spotify-embed";
 
 const EMBED_PERMISSIONS = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
 const LOAD_TIMEOUT = 12_000;
@@ -82,12 +83,13 @@ function youtubeError(code: number) {
 
 interface Props {
   station: Station;
+  spotifyTuner?: Ref<SpotifyTuner>;
   /** Called when the station cannot play; returns the name of the next station, or null if none is left. */
   onUnplayable?: () => string | null;
   onSkip?: () => void;
 }
 
-export function RadioPlayer({ station, onUnplayable, onSkip }: Props) {
+export function RadioPlayer({ station, spotifyTuner, onUnplayable, onSkip }: Props) {
   const frame = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
   const [blocked, setBlocked] = useState(false);
@@ -97,6 +99,7 @@ export function RadioPlayer({ station, onUnplayable, onSkip }: Props) {
   const platform = PROVIDERS[provider];
 
   useEffect(() => {
+    if (provider !== "youtube") return;
     const container = frame.current;
     if (!container) return;
     const iframe = document.createElement("iframe");
@@ -118,48 +121,43 @@ export function RadioPlayer({ station, onUnplayable, onSkip }: Props) {
     iframe.allowFullscreen = true;
     iframe.referrerPolicy = "strict-origin-when-cross-origin";
 
-    if (provider === "spotify") {
-      iframe.src = `https://open.spotify.com/embed/playlist/${playlistId}`;
-      iframe.height = "352";
-    } else {
-      const queue = youtubeQueue(videoId);
-      const params = new URLSearchParams({
-        enablejsapi: "1",
-        origin: window.location.origin,
-        playsinline: "1",
-      });
-      if (playlistId !== undefined) {
-        params.set("listType", "playlist");
-        params.set("list", playlistId);
-      }
-      if (queue) params.set("playlist", queue.slice(1).join(","));
-      const firstVideo = queue?.[0] ?? videoId;
-      iframe.src = `https://www.youtube.com/embed${firstVideo ? `/${firstVideo}` : ""}?${params}`;
-      void loadYouTubeApi().then((api) => {
-        if (!alive) return;
-        let nextIndex = 1;
-        player = new api.Player(iframe, {
-          events: {
-            onError: (event) => {
-              if (!alive) return;
-              if (queue && player && [2, 5, 100, 101, 150].includes(event.data)) {
-                const index = Math.max(nextIndex, player.getPlaylistIndex() + 1);
-                if (index < queue.length) {
-                  nextIndex = index + 1;
-                  player.playVideoAt(index);
-                  return;
-                }
-              }
-              setError(youtubeError(event.data));
-              setBlocked(true);
-              setNext(onUnplayable?.() ?? null);
-            },
-          },
-        });
-      }).catch(() => {
-        // The standards-based iframe still works when the optional API is blocked.
-      });
+    const queue = youtubeQueue(videoId);
+    const params = new URLSearchParams({
+      enablejsapi: "1",
+      origin: window.location.origin,
+      playsinline: "1",
+    });
+    if (playlistId !== undefined) {
+      params.set("listType", "playlist");
+      params.set("list", playlistId);
     }
+    if (queue) params.set("playlist", queue.slice(1).join(","));
+    const firstVideo = queue?.[0] ?? videoId;
+    iframe.src = `https://www.youtube.com/embed${firstVideo ? `/${firstVideo}` : ""}?${params}`;
+    void loadYouTubeApi().then((api) => {
+      if (!alive) return;
+      let nextIndex = 1;
+      player = new api.Player(iframe, {
+        events: {
+          onError: (event) => {
+            if (!alive) return;
+            if (queue && player && [2, 5, 100, 101, 150].includes(event.data)) {
+              const index = Math.max(nextIndex, player.getPlaylistIndex() + 1);
+              if (index < queue.length) {
+                nextIndex = index + 1;
+                player.playVideoAt(index);
+                return;
+              }
+            }
+            setError(youtubeError(event.data));
+            setBlocked(true);
+            setNext(onUnplayable?.() ?? null);
+          },
+        },
+      });
+    }).catch(() => {
+      // The standards-based iframe still works when the optional API is blocked.
+    });
     container.append(iframe);
 
     return () => {
@@ -188,13 +186,10 @@ export function RadioPlayer({ station, onUnplayable, onSkip }: Props) {
 
   return (
     <section className="player-section" aria-labelledby="player-heading">
-      <div className="player-heading">
-        <h3 id="player-heading">Reproductor</h3>
-        <a href={providerUrl(station)} target="_blank" rel="noopener noreferrer">
-          Abrir en {platform} <ExternalLink size={14} aria-hidden="true" />
-        </a>
-      </div>
-      <div ref={frame} className={`embed-frame embed-${provider}`} hidden={blocked} />
+      <h3 id="player-heading" className="sr-only">Reproductor de {platform}</h3>
+      {provider === "spotify"
+        ? <SpotifyEmbed playlistId={playlistId} title={`${platform} · ${name}`} tuner={spotifyTuner} onError={setError} />
+        : <div ref={frame} className="embed-frame embed-youtube" hidden={blocked} />}
       {blocked && (
         <div className="embed-frame embed-blocked">
           <TriangleAlert size={28} aria-hidden="true" />
@@ -205,7 +200,7 @@ export function RadioPlayer({ station, onUnplayable, onSkip }: Props) {
           </a>
         </div>
       )}
-      {blocked && next && (
+      {blocked && next && onSkip && (
         <p className="player-error" role="status">
           Pasando a «{next}» en {countdown} s.
           <button type="button" className="secondary-button" onClick={() => setNext(null)}>Quedarme aquí</button>
@@ -213,8 +208,14 @@ export function RadioPlayer({ station, onUnplayable, onSkip }: Props) {
       )}
       {error && !blocked && (
         <p className="player-error" role="status">
-          <TriangleAlert size={17} aria-hidden="true" /> {error} Usa el enlace para abrirlo en {platform}.
+          <TriangleAlert size={17} aria-hidden="true" /> {error}
+          {provider === "youtube" && " Puedes abrir la emisora en YouTube."}
         </p>
+      )}
+      {provider === "youtube" && !blocked && (
+        <a className="player-source" href={providerUrl(station)} target="_blank" rel="noopener noreferrer">
+          Abrir en {platform} <ExternalLink size={14} aria-hidden="true" />
+        </a>
       )}
     </section>
   );

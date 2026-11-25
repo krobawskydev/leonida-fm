@@ -13,7 +13,7 @@ const DESKTOP_MOTION = `${MOTION} and (min-width: 40.0625rem)`;
  * Everything is reverted when the view changes again, so rapid toggling cannot leave a half-played state.
  * With reduced motion the views switch with no movement at all.
  */
-export function useScreenTransition(view: "car" | "radio" | null, panel: RefObject<HTMLElement | null>, openButton: RefObject<HTMLElement | null>) {
+export function useScreenTransition(view: "car" | "radio" | null, panel: RefObject<HTMLElement | null>) {
   const origin = useRef<DOMRect | null>(null);
   const closing = useRef<DOMRect | null>(null);
 
@@ -50,8 +50,8 @@ export function useScreenTransition(view: "car" | "radio" | null, panel: RefObje
   useGSAP(() => {
     const frame = closing.current;
     closing.current = null;
-    const button = openButton.current;
-    if (view !== "car" || !frame || !button) return;
+    const display = panel.current;
+    if (view !== "car" || !frame || !display) return;
     const mm = gsap.matchMedia();
     mm.add(DESKTOP_MOTION, () => {
       const ghost = document.createElement("div");
@@ -59,7 +59,7 @@ export function useScreenTransition(view: "car" | "radio" | null, panel: RefObje
       ghost.setAttribute("aria-hidden", "true");
       Object.assign(ghost.style, { left: `${frame.left}px`, top: `${frame.top}px`, width: `${frame.width}px`, height: `${frame.height}px` });
       document.body.appendChild(ghost);
-      const to = button.getBoundingClientRect();
+      const to = display.getBoundingClientRect();
       gsap.to(ghost, {
         x: to.left + to.width / 2 - frame.left - frame.width / 2,
         y: to.top + to.height / 2 - frame.top - frame.height / 2,

@@ -3,18 +3,25 @@
 ## Verificación en el sitio público
 
 - [ ] Probar la reproducción de Spotify y YouTube desde los controles oficiales.
+- [ ] En Spotify, comprobar que al cargar la página haya que pulsar Play y que después se intente reproducir automáticamente al cambiar de emisora. Verificar que Play siga disponible si el navegador bloquea el arranque.
+- [ ] Volver al volante con Spotify y YouTube. Comprobar que el mismo reproductor siga sonando dentro de la pantalla del tablero y que vuelva al tamaño completo al abrir la radio.
 - [ ] Abrir una estación compartida en una ventana privada y comprobar la tarjeta social.
 - [ ] Alternar Spotify y YouTube y comprobar que el dial, la colección y el reproductor correspondan al proveedor activo. Probar la nueva selección de Cocoteo FM, el salto de videos bloqueados y un enlace compartido de video.
 - [ ] Cambiar entre Spotify y YouTube desde CircoLoco para comprobar que se conserva la emisora. Desde V-Rock en Spotify, comprobar el aviso y el acceso al catálogo de YouTube.
+- [ ] Comprobar que CircoLoco conserve 96.1 FM y «House y techno» al cambiar de proveedor. Verificar que «Mis estaciones» muestre el género y siga el orden del dial.
+- [ ] En una sesión nueva, sintonizar cinco emisoras principales distintas en Spotify. Comprobar que las dos emisoras especiales aparezcan en el dial y sigan disponibles tras recargar.
 - [ ] Comprobar que la lista arranque cerrada en escritorio y móvil, que el contador permita abrirla y que la rueda mantenga hasta ocho opciones al final del catálogo.
+- [ ] Marcar una favorita, cambiar de proveedor y recargar. Comprobar que el filtro conserve la emisora cuando esté disponible y que se pueda quitar con el teclado.
 - [ ] Ajustar la velocidad del vehículo y comprobar que el cambio se aplique al instante y se conserve al volver de la radio.
 - [ ] Comprobar que el vehículo acelere y desacelere suavemente desde el inicio del recorrido.
 - [ ] Comprobar que el velocímetro siga la velocidad del recorrido y marque cero al pausar el paisaje.
 - [ ] Recorrer los hoteles, el paseo y la playa. Comprobar la continuidad de los carriles y las aceras al volver a los hoteles.
+- [ ] Desplazarse hasta el final de «Mis estaciones» y volver al volante. Comprobar que la cabina ocupe toda la ventana y se vea el encabezado.
+- [ ] Abrir la radio con el paisaje en marcha y con el paisaje en pausa. Comprobar que conserve ese estado detrás del dial.
 
 ## Ideas para contribuir
 
-- [ ] Probar el tablero con un lector de pantalla y medir el contraste de «Abrir radio».
+- [ ] Probar el tablero con un lector de pantalla y medir el contraste de «Ver radio».
 - [ ] Verificar la [cortinilla de sintonización](SPEC.md#p2--cortinilla-de-sintonización) al cambiar desde el dial y la lista, al cambiar rápido y con movimiento reducido. Comprobar que el reproductor siga cargando al seleccionar la emisora.
 - [ ] Verificar el acceso directo a la radio, la colección y los enlaces compartidos en móvil y con el recorrido 3D desactivado.
 

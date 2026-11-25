@@ -8,4 +8,6 @@ export interface SavedRadio {
   version: 1;
   stations: Station[];
   selectedKey: string;
+  tunedSpotifyKeys?: string[];
+  favoriteKeys?: string[];
 }

@@ -104,7 +104,7 @@ button:disabled { cursor: default; opacity: .5; }
     linear-gradient(180deg, #ff8c7214 0%, transparent 35%),
     radial-gradient(ellipse at 50% 58%, #6ce4d41f 0%, #5b397b40 42%, var(--surface) 85%);
 }
-.tuner-top, .player-heading {
+.tuner-top {
   flex-wrap: wrap;
   display: flex;
   align-items: center;
@@ -135,6 +135,7 @@ button:disabled { cursor: default; opacity: .5; }
 }
 .signal b { font-size: clamp(.9rem, 2.6vw, 1.3rem); letter-spacing: .07em; color: var(--coral); text-shadow: none; }
 .now-tuned h2 { margin-top: .4rem; font-size: clamp(1.2rem, 4vw, 1.75rem); font-weight: 760; color: var(--teal); overflow-wrap: anywhere; }
+.station-genre { display: block; margin-top: .3rem; color: var(--muted); font-size: clamp(.7rem, 3.6cqw, .9rem); line-height: 1.15; }
 .preview-label { display: block; color: var(--rose); font-size: .88rem; margin-top: .25rem; }
 
 .dial-controls {
@@ -221,9 +222,10 @@ button:disabled { cursor: default; opacity: .5; }
   .tuning-cue { animation: none; }
 }
 .dial-labels { display: flex; justify-content: space-between; margin-top: .37rem; color: #b8b8ca; font: .7rem var(--mono); }
+.tuner-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: .5rem; margin-top: .25rem; }
 .station-directory-link {
   display: flex; align-items: center; gap: .5rem; min-height: 2.75rem;
-  margin: .25rem auto 0; padding-inline: .75rem; border-radius: .5rem;
+  padding-inline: .75rem; border-radius: .5rem;
   color: var(--teal); font: 650 .83rem var(--mono);
 }
 .station-directory-link:hover { background: #6ce4d41c; }
@@ -246,6 +248,10 @@ button:disabled { cursor: default; opacity: .5; }
 .secondary-button, .icon-button { background: #262538; color: var(--text); }
 .secondary-button:hover:not(:disabled), .icon-button:hover:not(:disabled) { border-color: #74657f; background: #343047; }
 .icon-button { width: 2.75rem; flex-shrink: 0; padding: 0; }
+.icon-button.favorite-button { background: transparent; border-color: transparent; color: var(--muted); }
+.icon-button.favorite-button:hover:not(:disabled) { background: #ffffff0d; border-color: transparent; color: #ffd983; }
+.icon-button.favorite-button[aria-pressed="true"] { color: #ffd983; }
+.favorite-button[aria-pressed="true"] svg { fill: currentColor; }
 .tune-button {
   width: 3.4rem; height: 3.4rem; border-radius: 50%; color: var(--teal);
   border-color: #6ce4d466; background: radial-gradient(circle at 50% 35%, #26304a, #121623);
@@ -255,23 +261,23 @@ button:disabled { cursor: default; opacity: .5; }
 .tune-button:active:not(:disabled) { transform: translateY(1px); }
 .share-button { background: #1d1d2c; }
 
-.player-section { padding: 1.05rem; border-top: 1px solid var(--line); }
-.player-heading { margin-bottom: .65rem; flex-wrap: wrap; }
-.player-heading h3 { font-size: .95rem; font-weight: 700; }
-.player-heading a {
+.player-section { min-width: 0; padding: var(--player-inset); }
+.player-source {
+  width: fit-content;
   min-height: 2.75rem;
-  display: inline-flex;
+  margin: .5rem 0 0 auto;
+  display: flex;
   align-items: center;
   gap: .4rem;
   color: var(--teal);
   font-size: .84rem;
 }
-.player-heading a:hover { text-decoration: underline; text-underline-offset: .2em; }
-.embed-frame, .player-skeleton { background: var(--recess); border-radius: .75rem; }
-.embed-frame iframe { display: block; width: 100%; border: 0; border-radius: .75rem; }
+.player-source:hover { text-decoration: underline; text-underline-offset: .2em; }
+.embed-frame, .player-skeleton { background: var(--recess); border-radius: .625rem; }
+.embed-frame iframe { display: block; width: 100%; border: 0; border-radius: inherit; }
 .embed-spotify { min-height: 352px; }
 .embed-youtube iframe { min-height: 200px; aspect-ratio: 16 / 9; }
-.player-skeleton { min-height: 352px; margin: 4.5rem 1.05rem 1.05rem; }
+.player-skeleton { min-height: 352px; margin: var(--player-inset); }
 .player-error, .app-notice {
   border: 1px solid #e4a2ad4d;
   border-radius: .65rem;
@@ -291,7 +297,12 @@ button:disabled { cursor: default; opacity: .5; }
 .app-notice { margin-top: 1rem; }
 
 .collection { border-color: #5b397b99; background: linear-gradient(180deg, #5b397b26, var(--surface) 14rem); }
+.collection-head { display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
 .collection-head h2 { font-size: 1.45rem; font-weight: 780; margin-top: .48rem; letter-spacing: -.04em; }
+.collection-controls, .collection-filter { display: flex; flex-wrap: wrap; gap: .5rem; }
+.collection-close { background: transparent; color: var(--muted); }
+.collection-filter button[aria-pressed="true"] { border-color: #6fa89e; background: #22343a; color: var(--teal); }
+.collection-empty { margin-block: 1rem; color: var(--muted); font-size: .9rem; }
 .station-list { display: grid; gap: .5rem; margin-block: 1rem; }
 .station-row {
   display: flex;
@@ -329,8 +340,8 @@ button:disabled { cursor: default; opacity: .5; }
   background: #353044;
 }
 .is-active .station-glyph { background: #29464c; color: var(--teal); }
-.station-lock { padding-right: .85rem; color: #b0afc0; }
-.station-actions { display: flex; padding-right: .18rem; }
+.station-lock { display: inline-flex; align-items: center; padding-inline: .4rem; color: #b0afc0; }
+.station-actions { display: flex; align-items: center; padding-right: .18rem; }
 .station-actions .icon-button { background: transparent; border-color: transparent; color: #d6cde3; }
 .station-actions .delete-button:hover { color: #ffc1d1; }
 .add-station {
@@ -413,7 +424,6 @@ button:disabled { cursor: default; opacity: .5; }
   .hero-content { padding: 1.5rem 3rem; }
   .hero p { font-size: 1.1rem; }
   .tuner-content, .collection { padding: 1.35rem; }
-  .player-section { padding: .9rem 1.35rem 1.35rem; }
 }
 
 @media (min-width: 57rem) {
@@ -440,14 +450,15 @@ button:disabled { cursor: default; opacity: .5; }
   .tune-button { width: 2.9rem; height: 2.9rem; }
   .dial-controls { gap: .3rem; }
   .shell { width: calc(100% - 1.25rem); }
-  .tuner-content, .collection, .player-section { padding-inline: .8rem; }
+  .tuner-content, .collection { padding-inline: .8rem; }
   .station-actions { flex-direction: column; }
 }
 
 /* ---- Modo Car ---- */
 [hidden] { display: none !important; }
 .app { position: relative; }
-.stage { position: relative; isolation: isolate; }
+.stage { --w: max(100cqw, calc(100cqh * 16 / 9)); position: relative; isolation: isolate; }
+.stage[data-view="car"] { height: 100svh; container-type: size; }
 .stage > .app-notice {
   position: relative;
   z-index: 3;
@@ -478,12 +489,8 @@ button:disabled { cursor: default; opacity: .5; }
   transition: opacity 200ms ease;
 }
 .stage[data-view="radio"] .car-scene::after { opacity: 1; }
-.stage[data-view="radio"] .car-band { visibility: hidden; }
 
-.car-scene {
-  --w: max(100cqw, calc(100cqh * 16 / 9));
-  position: relative; container-type: size; width: 100%; height: 100svh; overflow: hidden; background: #07090f;
-}
+.car-scene { position: relative; container-type: size; width: 100%; height: 100svh; overflow: hidden; background: #07090f; }
 /* Full-bleed: a 16:9 box that always covers the viewport, centered. */
 .car-look {
   position: absolute; inset: 0; will-change: transform;
@@ -546,63 +553,6 @@ button:disabled { cursor: default; opacity: .5; }
   white-space: nowrap;
 }
 .speedometer-readout strong { color: #fff2df; font-size: 1.5em; font-variant-numeric: tabular-nums; }
-/* The black console screen spans 66-94% x 60-84% of the image; the button sits at 80% / 72% of that same box. */
-.car-band {
-  position: absolute; left: calc(50% + .3 * var(--w)); top: calc(50% + .22 * var(--w) * 9 / 16);
-  transform: translate(-50%, -50%);
-}
-.open-radio {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: clamp(.75rem, calc(var(--w) * .012), 1.15rem);
-  width: min(calc(var(--w) * .24), 22rem);
-  min-height: 44px;
-  padding: .7rem clamp(.8rem, calc(var(--w) * .012), 1.2rem);
-  border: 1px solid #6ce4d466;
-  border-radius: .68rem;
-  color: var(--text);
-  text-align: left;
-  background:
-    repeating-linear-gradient(0deg, transparent 0 4px, #ffffff04 4px 5px),
-    linear-gradient(115deg, #192831, #100f19 72%);
-  box-shadow: 0 .5rem 1.2rem #000a, inset 0 0 .85rem #6ce4d417;
-  transition: box-shadow 150ms, border-color 150ms, transform 80ms;
-}
-.car-preview-dial {
-  display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: .15rem;
-  width: clamp(3.65rem, calc(var(--w) * .067), 5.8rem);
-  aspect-ratio: 1;
-  border: 1px solid #6ce4d470;
-  border-radius: 50%;
-  color: var(--teal);
-  background: radial-gradient(circle, #192d33, #0c141b 73%);
-  box-shadow: inset 0 0 .85rem #6ce4d42b;
-  font: 800 clamp(1.15rem, calc(var(--w) * .021), 1.9rem)/1 var(--mono);
-  font-variant-numeric: tabular-nums;
-}
-.car-preview-dial small { color: var(--coral); font: 700 .63rem/1.15 var(--mono); letter-spacing: .15em; }
-.car-preview-details, .car-preview-summary { display: grid; min-width: 0; }
-.car-preview-summary { gap: .1rem; }
-.car-preview-summary strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
-.car-preview-provider { color: var(--muted); font-size: .75rem; }
-.car-preview-action {
-  display: flex;
-  align-items: center;
-  gap: .28rem;
-  margin-top: .43rem;
-  color: var(--teal);
-  font: 700 .76rem/1.2 var(--mono);
-  letter-spacing: .045em;
-}
-.car-preview-action svg { flex: none; }
-.open-radio:hover:not(:disabled) { border-color: var(--teal); box-shadow: 0 0 1.3rem #6ce4d450, inset 0 0 1.2rem #6ce4d433; }
-.open-radio:active:not(:disabled) { transform: translateY(1px) scale(.98); }
-.open-radio:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; box-shadow: 0 0 0 7px #000000b3, 0 0 1.8rem #6ce4d46e; }
-
 .app > .site-header {
   position: absolute;
   inset: 0 0 auto;
@@ -672,9 +622,13 @@ button:disabled { cursor: default; opacity: .5; }
 .screen.tuner { grid-area: tuner; box-shadow: inset 0 0 0 1px #6ce4d414; }
 .screen > .tuner-content { border-radius: inherit; }
 .screen.collection { grid-column: 1 / -1; }
-.tray { grid-area: player; }
-.tray .player-section { border-top: 0; }
-.tray .player-skeleton { margin: 1rem; }
+.tray {
+  --player-inset: .5rem;
+  grid-area: player;
+  border-color: #ad75575c;
+  border-radius: 1rem;
+  box-shadow: inset 0 1px 0 #ffffff0a;
+}
 .cabin .wheel { max-width: 24rem; }
 .cabin .tuner-content { padding: .85rem; }
 
@@ -688,27 +642,115 @@ button:disabled { cursor: default; opacity: .5; }
   .cabin .dial-controls { gap: .5rem .75rem; }
   .cabin .tune-button { width: 3rem; height: 3rem; }
   .cabin .station-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stage[data-view="radio"] .tray { --player-inset: .75rem; }
+  .stage[data-view="radio"] .tray[data-provider="spotify"] { align-self: stretch; display: grid; }
+  .stage[data-view="radio"] .tray[data-provider="spotify"] .player-section { display: flex; flex-direction: column; }
+  .stage[data-view="radio"] .embed-spotify { position: relative; flex: 1; }
+  .stage[data-view="radio"] .embed-spotify iframe { position: absolute; inset: 0; height: 100% !important; }
 }
 
-/* Keep the same provider iframe when returning to the driving view. */
+/* Match the physical screen and its parallax without moving the iframe in the DOM. */
 .stage[data-view="car"] .cabin {
   position: absolute;
-  left: 1.5rem;
-  bottom: 1.5rem;
-  width: min(23rem, max(15rem, 30%));
+  left: 50%;
+  top: 50%;
+  width: min(calc(.24 * var(--w)), calc(100cqw - .6 * var(--w) - 2rem));
+  height: clamp(5.5rem, calc(.113 * var(--w)), max(5.5rem, calc(100cqh - .2475 * var(--w) - 2rem)));
+  container: dashboard-display / inline-size;
+  display: grid;
+  grid-template: "station player" minmax(0, 1fr) / minmax(0, 2fr) minmax(0, 3fr);
+  gap: clamp(.25rem, .45cqw, .65rem);
+  padding: clamp(.2rem, .4cqw, .6rem);
+  border: 1px solid #ad75575c;
+  border-radius: .85rem;
+  background: #0d111a;
+  transform-origin: top left;
+  transform: translate(calc(var(--look-x, 0) * -3cqw), calc(var(--look-y, 0) * -2.5cqh)) scale(1.05)
+    translate(calc(.3 * var(--w) - 50%), calc(.22 * var(--w) * 9 / 16 - 50%));
 }
 .stage[data-view="car"] .radio-bezel { display: none; }
-.stage[data-view="car"] .tray:not([data-concealed]) {
-  background: #0d111af2;
-  box-shadow: 0 .8rem 2rem #000a;
+.dashboard-station {
+  grid-area: station;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  gap: clamp(.125rem, .7cqw, .4rem);
+  padding: .25rem;
+  border: 1px solid #6ce4d430;
+  border-radius: .65rem;
+  background: radial-gradient(ellipse at 50% 35%, #20303d, #151420 72%);
+  text-align: center;
 }
-.stage[data-view="car"] .tray:not([data-concealed]) .player-section { padding: .6rem .75rem .75rem; }
-.tray[data-concealed] { position: absolute; inset: 0 auto auto 0; width: min(20rem, 100%); visibility: hidden; pointer-events: none; }
+.dashboard-frequency {
+  color: var(--teal);
+  font: 800 clamp(1rem, 6.5cqw, 3.2rem)/1 var(--mono);
+  white-space: nowrap;
+  letter-spacing: -.07em;
+}
+.dashboard-frequency small { color: var(--coral); font-size: .42em; letter-spacing: .04em; }
+.dashboard-station-name, .dashboard-station-genre {
+  max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.dashboard-station-name { font-size: clamp(.7rem, 3cqw, 1.35rem); line-height: 1.2; }
+.dashboard-station-genre { color: var(--muted); font-size: clamp(.7rem, 2.1cqw, 1rem); line-height: 1.15; }
+.stage[data-view="car"] .tray {
+  --player-inset: 0px;
+  height: 100%;
+  overflow: clip;
+  border-radius: .65rem;
+  background: var(--recess);
+}
+.stage[data-view="car"] .player-section { height: 100%; }
+.stage[data-view="car"] .player-section:has(.player-error, .embed-blocked) { overflow: auto; }
+.stage[data-view="car"] .player-section:not(:has(.player-error)) .player-source { display: none; }
+.stage[data-view="car"] .embed-frame:has(iframe) { position: relative; height: 100%; min-height: 0; }
+.stage[data-view="car"] .embed-frame iframe {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: var(--embed-width, 100%) !important;
+  height: var(--embed-height, 100%) !important;
+  min-height: 0;
+  transform: scale(var(--embed-scale, 1));
+  transform-origin: top left;
+}
+.stage[data-view="car"] .player-skeleton { min-height: 100%; }
+.dashboard-actions {
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+  gap: .25rem;
+  margin-top: clamp(.5rem, 1.6cqw, .75rem);
+}
+.open-radio {
+  max-width: 100%;
+  min-height: 2.75rem;
+  padding-inline: clamp(.28rem, 2cqw, 1rem);
+  border-color: #6ce4d470;
+  background: #163033;
+  color: #a8f2e8;
+  font-size: clamp(.68rem, 2.5cqw, 1rem);
+  white-space: nowrap;
+}
+.open-radio:hover:not(:disabled) { border-color: var(--teal); background: #214044; }
+@container dashboard-display (max-width: 24rem) {
+  .dashboard-actions .favorite-button {
+    position: absolute;
+    inset-inline-end: 0;
+    bottom: calc(100% + .25rem);
+    background: #101823;
+  }
+}
+@container dashboard-display (max-width: 21rem) {
+  .dashboard-station-genre, .open-radio svg { display: none; }
+  .dashboard-actions { margin-top: .25rem; }
+}
 
 @media (max-width: 40rem), (max-aspect-ratio: 3 / 2) {
   .stage[data-view="radio"] { padding-top: clamp(7.25rem, 22svh, 11rem); }
   .radio-toolbar .secondary-button { padding-inline: .6rem; }
-  .cabin .tray .player-section { padding: .75rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -720,7 +762,7 @@ button:disabled { cursor: default; opacity: .5; }
 
 /* Car view: exactly one screen, no page scroll. Footer disclaimer overlays the scene. */
 html:has(.app[data-view="car"]) { overflow: hidden; }
-.app[data-view="car"] { height: 100svh; overflow: hidden; }
+.app[data-view="car"] { height: 100svh; overflow: clip; }
 .app[data-view="car"] .site-footer {
   position: absolute;
   inset: auto 0 .35rem 0;
@@ -752,7 +794,7 @@ html:has(.app[data-view="car"]) { overflow: hidden; }
 .scene-controls {
   position: absolute;
   z-index: 3;
-  right: 1.5rem;
+  left: 1.5rem;
   bottom: 2.2rem;
   display: flex;
   align-items: center;
@@ -779,7 +821,7 @@ html:has(.app[data-view="car"]) { overflow: hidden; }
 .scene-speed span { color: var(--teal); font: 700 .8rem var(--mono); white-space: nowrap; }
 .scene-speed input { width: 6rem; min-height: 2.25rem; accent-color: var(--teal); cursor: pointer; }
 @media (max-width: 58rem) {
-  .scene-controls { flex-direction: column; align-items: end; }
+  .scene-controls { flex-direction: column; align-items: flex-start; }
 }
 .scene-toggle:hover:not(:disabled) { border-color: var(--teal); background: #121826eb; }
 .scene-toggle:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
