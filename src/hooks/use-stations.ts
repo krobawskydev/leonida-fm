@@ -1,11 +1,11 @@
 "use client";
 
-import { startTransition, useEffect, useReducer } from "react";
+import { startTransition, useEffect, useReducer, useRef } from "react";
 import {
   DEFAULT_KEY, DEFAULT_STATION, STORAGE_KEY, emptyRadio, readSavedRadio,
-  readSharedStation, stationKey,
+  matchingPresetKey, readSharedStation, stationCollection, stationForProvider, stationKey,
 } from "@/lib/stations";
-import type { SavedRadio, Station } from "@/types/station";
+import type { Provider, SavedRadio, Station } from "@/types/station";
 
 interface RadioState {
   saved: SavedRadio;
@@ -45,20 +45,23 @@ function reducer(state: RadioState, action: Action): RadioState {
     case "storage-unavailable":
       return { ...state, storageUnavailable: true };
     case "select":
-      if (action.key !== DEFAULT_KEY && !saved.stations.some((station) => stationKey(station) === action.key)) return state;
+      if (!stationCollection(saved.stations).some((station) => stationKey(station) === action.key)) return state;
       return updateSaved({ ...state, invalidShare: false }, { ...saved, selectedKey: action.key }, null);
     case "add": {
       const key = stationKey(action.station);
-      if (key === DEFAULT_KEY || saved.stations.some((station) => stationKey(station) === key)) return state;
+      if (stationCollection(saved.stations).some((station) => stationKey(station) === key)) return state;
       return updateSaved({ ...state, invalidShare: false }, { ...saved, stations: [...saved.stations, action.station], selectedKey: key }, null);
     }
     case "remove": {
-      const stations = saved.stations.filter((station) => stationKey(station) !== action.key);
-      if (stations.length === saved.stations.length) return state;
+      const removed = saved.stations.find((station) => stationKey(station) === action.key);
+      if (!removed) return state;
+      const stations = saved.stations.filter((station) => station !== removed);
       return updateSaved(state, {
         ...saved,
         stations,
-        selectedKey: saved.selectedKey === action.key ? DEFAULT_KEY : saved.selectedKey,
+        selectedKey: saved.selectedKey === action.key
+          ? stationKey(stationForProvider(stationCollection(stations), removed.provider))
+          : saved.selectedKey,
       });
     }
     case "rename": {
@@ -73,6 +76,7 @@ function reducer(state: RadioState, action: Action): RadioState {
 
 export function useStations() {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const lastByProvider = useRef<Partial<Record<Provider, string>>>({});
 
   useEffect(() => {
     let saved = emptyRadio();
@@ -89,7 +93,7 @@ export function useStations() {
     let preview = shared;
     if (shared) {
       const key = stationKey(shared);
-      if (key === DEFAULT_KEY || saved.stations.some((station) => stationKey(station) === key)) {
+      if (stationCollection(saved.stations).some((station) => stationKey(station) === key)) {
         saved = { ...saved, selectedKey: key };
         preview = null;
       }
@@ -111,9 +115,10 @@ export function useStations() {
     }
   }, [state.saved, state.write]);
 
-  const collection = [DEFAULT_STATION, ...state.saved.stations];
+  const collection = stationCollection(state.saved.stations);
   const active = state.preview ?? collection.find((station) => stationKey(station) === state.saved.selectedKey) ?? DEFAULT_STATION;
-  const stations = state.preview ? [...collection, state.preview] : collection;
+  const providerStations = collection.filter((station) => station.provider === active.provider);
+  const stations = state.preview ? [...providerStations, state.preview] : providerStations;
 
   function select(key: string) {
     if (key === stationKey(active) && !state.invalidShare) return;
@@ -121,10 +126,18 @@ export function useStations() {
     dispatch({ type: "select", key });
   }
 
+  function selectProvider(provider: Provider) {
+    if (provider === active.provider) return;
+    const current = collection.find((station) => stationKey(station) === state.saved.selectedKey);
+    if (current) lastByProvider.current[current.provider] = stationKey(current);
+    const targetKey = matchingPresetKey(active, provider) ?? lastByProvider.current[provider];
+    select(stationKey(stationForProvider(collection, provider, targetKey)));
+  }
+
   function clearShare() {
     const url = new URL(window.location.href);
     if (url.searchParams.has("station")) {
-      for (const param of ["station", "provider", "playlist", "name"]) url.searchParams.delete(param);
+      for (const param of ["station", "provider", "playlist", "video", "name"]) url.searchParams.delete(param);
       window.history.replaceState(null, "", url);
     }
   }
@@ -139,5 +152,5 @@ export function useStations() {
     dispatch({ type: "remove", key });
   }
 
-  return { ...state, active, stations, collection, select, add, remove, dispatch };
+  return { ...state, active, stations, collection, select, selectProvider, add, remove, dispatch };
 }

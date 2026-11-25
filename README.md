@@ -2,7 +2,7 @@
 
 **Your World. Your Frequency.**
 
-Radio web personal y gratuita. Sintoniza **Leonida Radio** en Spotify o añade tus propias estaciones con playlists de Spotify y YouTube. Las estaciones se guardan en el navegador y cada una tiene un enlace que puedes compartir.
+Radio web personal y gratuita. Sintoniza **Leonida Radio** en Spotify o añade tus propias estaciones con playlists de Spotify o mixes, videos y playlists de YouTube. Las estaciones se guardan en el navegador y cada una tiene un enlace que puedes compartir.
 
 > Unofficial fan-made project. Not affiliated with Rockstar Games or Take-Two Interactive.
 
@@ -15,7 +15,7 @@ npm ci
 npm run dev
 ```
 
-Abre [localhost:3000](http://localhost:3000). En «Mis estaciones» puedes añadir una playlist, darle un nombre y guardar la estación. Usa los controles del reproductor para escucharla.
+Abre [localhost:3000](http://localhost:3000). Elige Spotify o YouTube encima del dial para ver las estaciones de esa plataforma. En «Mis estaciones» puedes añadir un enlace y guardar una estación personalizada. Usa los controles del reproductor para escucharla.
 
 En pantallas compatibles, el recorrido costero aparece cuando la escena 3D está lista. Usa «Pausar paisaje» para detener la avenida y «Abrir radio» para desplegar el dial. Al volver al volante, el recorrido continúa desde la misma posición si estaba en marcha. La radio se abre directamente en móvil y cuando la escena 3D está cargando, no cabe o no se puede mostrar.
 
@@ -34,14 +34,14 @@ Si quieres aportar a Leonida FM, haz un fork en GitHub, clónalo y crea una rama
 
 Antes de abrir el PR, ejecuta las comprobaciones de la sección anterior. En la descripción, cuenta qué cambiaste y cómo lo verificaste. Si cambia la interfaz, adjunta una captura. Si reportas un fallo, incluye los pasos para reproducirlo y el navegador que usaste.
 
-## Playlists compatibles
+## Enlaces compatibles
 
 | Proveedor | Ejemplos |
 | --- | --- |
 | Spotify | `https://open.spotify.com/playlist/ID`, con prefijo regional opcional `/intl-es/` |
-| YouTube | `https://www.youtube.com/playlist?list=ID`, enlaces `watch` o `youtu.be` que incluyan una playlist compatible |
+| YouTube | `https://www.youtube.com/watch?v=ID`, `https://youtu.be/ID` y `https://www.youtube.com/playlist?list=ID` |
 
-Si Spotify solo ofrece una vista previa, inicia sesión en Spotify en el mismo navegador y recarga. En YouTube, la disponibilidad depende de la región y de los permisos de incrustación de cada video. Puedes abrir la playlist directamente en el proveedor desde el reproductor. [Ayuda de Spotify](https://developer.spotify.com/documentation/embeds/tutorials/troubleshooting) · [Errores de YouTube](https://developers.google.com/youtube/iframe_api_reference#onError)
+Si Spotify solo ofrece una vista previa, inicia sesión en Spotify en el mismo navegador y recarga. En YouTube, la disponibilidad depende de la región y de los permisos de incrustación de cada video. Puedes abrir el contenido directamente en el proveedor desde el reproductor. [Ayuda de Spotify](https://developer.spotify.com/documentation/embeds/tutorials/troubleshooting) · [Errores de YouTube](https://developers.google.com/youtube/iframe_api_reference#onError)
 
 ## Estructura
 

@@ -1,6 +1,6 @@
 # Leonida FM · Especificación
 
-Leonida FM · «Your World. Your Frequency.» es una radio web independiente y gratuita, inspirada en los diales de automóvil y las noches tropicales. Permite crear y compartir estaciones a partir de playlists. La aplicación se exporta como una página estática de Next.js con estado local en el navegador. [Referencias y créditos](RESEARCH.md)
+Leonida FM · «Your World. Your Frequency.» es una radio web independiente y gratuita, inspirada en los diales de automóvil y las noches tropicales. Permite crear y compartir estaciones a partir de playlists o videos de YouTube. La aplicación se exporta como una página estática de Next.js con estado local en el navegador. [Referencias y créditos](RESEARCH.md)
 
 ## Forma de trabajo
 
@@ -9,11 +9,12 @@ El SPEC y la implementación avanzan juntos, un flujo a la vez. Antes de cambiar
 ## Flujos y requisitos
 
 - **Entrar.** La primera visita selecciona Leonida Radio, una estación fija de Spotify con la playlist `37i9dQZF1DX6RSJAsEDz7H`. Se muestra siempre una sola vez y carece de acción de eliminación. Spotify muestra su título «Grand Theft Auto Official Playlist» en el embed. La app usa «Leonida Radio» y evita atribuirla a GTA VI como playlist oficial.
-- **Sintonizar.** Los controles anterior y siguiente recorren la lista de forma circular. La lista también permite elegir una estación directamente. El dial muestra una frecuencia decorativa y el nombre de la estación activa. Solo se monta el iframe de esa estación.
-- **Crear.** El formulario requiere un nombre de 1 a 60 caracteres, proveedor y enlace válido. Tras guardar, la nueva estación se selecciona y se añade al final de la colección. La identidad `provider:playlistId` impide duplicados, incluida la estación fija.
-- **Renombrar.** El usuario puede editar el nombre de una estación personalizada sin cambiar su playlist ni detener el reproductor.
-- **Eliminar.** Solo se pueden eliminar estaciones guardadas por el usuario. Se confirma la eliminación y, si estaba activa, se vuelve a Leonida Radio.
-- **Compartir.** El botón copia un enlace con `?station=1&provider=…&playlist=…&name=…`, construido con `URLSearchParams`. El enlace abre la estación en cualquier navegador. Si ya existe localmente, se usa su nombre guardado. Abrir un enlace solo cambia la selección de la sesión y deja intacto el almacenamiento hasta que el usuario realice un cambio. Una estación nueva se previsualiza y se incorpora mediante «Guardar estación». La vista temporal no altera la última estación persistida. El enlace conserva la estación al recargar. Al escoger otra estación, crear una distinta o eliminar la estación activa, se limpian los parámetros del enlace. Un enlace inválido muestra un aviso y usa la selección local.
+- **Cambiar de plataforma.** Al pasar de Spotify a YouTube o al revés, se conserva la emisora si el catálogo incluye una fuente para ambas plataformas. Si falta una fuente, el botón avisa «Sin esta emisora» y permite explorar la otra plataforma. Al explorar, se abre la última estación sintonizada allí durante la sesión, si sigue disponible, o la inicial de ese proveedor (Leonida Radio en Spotify y Cocoteo FM en YouTube). Un enlace compartido abre su plataforma directamente. Apple Music queda para una fase posterior.
+- **Sintonizar.** Los controles anterior y siguiente recorren las estaciones del proveedor activo de forma circular. La lista permite elegir una estación directamente. Solo se monta el iframe de esa estación.
+- **Crear.** El formulario requiere un nombre de 1 a 60 caracteres, proveedor y enlace válido. Tras guardar, la nueva estación se selecciona y se añade al final de la colección. Las claves `provider:playlistId` y `youtube:video:videoId` impiden duplicados.
+- **Renombrar.** El usuario puede editar el nombre de una estación personalizada sin cambiar su enlace ni detener el reproductor.
+- **Eliminar.** Solo se pueden eliminar estaciones guardadas por el usuario. Se confirma la eliminación y, si estaba activa, se vuelve a una estación de la misma plataforma.
+- **Compartir.** El botón copia un enlace con `?station=1&provider=…&playlist=…&name=…` para playlists o con `video` en lugar de `playlist` para mixes en video, construido con `URLSearchParams`. El enlace abre la estación en cualquier navegador. Si ya existe localmente, se usa su nombre guardado. Abrir un enlace solo cambia la selección de la sesión y deja intacto el almacenamiento hasta que el usuario realice un cambio. Una estación nueva se previsualiza y se incorpora mediante «Guardar estación». La vista temporal no altera la última estación persistida. El enlace conserva la estación al recargar. Al escoger otra estación, crear una distinta o eliminar la estación activa, se limpian los parámetros del enlace. Un enlace inválido muestra un aviso y usa la selección local.
 - **Recargar.** Se restaura la última estación guardada si sigue disponible. La colección conserva su orden. Si el almacenamiento está bloqueado, la sesión en curso sigue funcionando y se muestra un aviso.
 
 ## Formatos aceptados
@@ -23,9 +24,9 @@ Solo se permiten URLs HTTPS sin credenciales, puerto personalizado ni dominios a
 | Proveedor | Formatos | Identificador |
 | --- | --- | --- |
 | Spotify | `open.spotify.com/playlist/ID` y rutas equivalentes con prefijo de idioma `intl-xx` | 22 caracteres alfanuméricos |
-| YouTube | `youtube.com/playlist?list=ID`, `youtube.com/watch?list=ID` y `youtu.be/VIDEO?list=ID`; se aceptan `www` y `m` para youtube.com | Playlist explícita `PL…` o `OLAK5uy_…` |
+| YouTube | `youtube.com/watch?v=ID`, `youtu.be/ID` y `youtube.com/playlist?list=ID`; si el enlace incluye una playlist compatible, se usa la playlist | Video de 11 caracteres o playlist explícita `PL…` o `OLAK5uy_…` |
 
-La validación es sintáctica. Se rechazan videos sueltos, álbumes de Spotify, mixes personales y enlaces abreviados que necesiten redirección. La publicación, el permiso de incrustación y la disponibilidad por región se comprueban al reproducir. El enlace compartido expone únicamente el nombre, proveedor e ID de playlist. El acceso a una playlist privada depende del proveedor.
+La validación es sintáctica. Se rechazan álbumes de Spotify, listas personalizadas de YouTube y enlaces abreviados de Spotify que necesiten redirección. La publicación, el permiso de incrustación y la disponibilidad por región se comprueban al reproducir. El enlace compartido expone únicamente el nombre, proveedor e ID de playlist o video. El acceso a una playlist privada depende del proveedor.
 
 ## Arquitectura y datos
 
@@ -35,14 +36,14 @@ La validación es sintáctica. Se rechazan videos sueltos, álbumes de Spotify, 
 - `src/lib/stations.ts` valida URL, datos persistidos y enlaces compartidos. `src/types/station.ts` define los contratos.
 - `public/` contiene arte original y metadatos gráficos. `tests/` contiene pruebas unitarias con el runner de Node.
 
-`Station` contiene `provider: "spotify" | "youtube"`, `playlistId` y `name`. La estación fija se define en código. La clave `leonida-fm:stations` guarda `{ version: 1, stations, selectedKey }`. Se descartan entradas inválidas y duplicadas, se recupera el esquema inicial sin versión y se conservan datos de versiones futuras hasta que el usuario haga un cambio explícito.
+`Station` contiene el proveedor, el nombre y un identificador de playlist o video. Las estaciones incluidas se definen en código. Si una estación incluida coincide con una que ya se guardó, prevalece la estación personalizada. La clave `leonida-fm:stations` guarda `{ version: 1, stations, selectedKey }`. Se descartan entradas inválidas y duplicadas, se recupera el esquema inicial sin versión y se conservan datos de versiones futuras hasta que el usuario haga un cambio explícito.
 
 Define `NEXT_PUBLIC_SITE_URL` con la URL pública antes de compilar para que los metadatos y la tarjeta social usen el dominio correcto.
 
 ## Reproducción y riesgos
 
 - **Spotify.** El embed oficial conserva controles, permisos y branding. Se usa el iframe estándar porque los controles nativos bastan para el MVP. En una prueba manual, el propietario escuchó canciones completas de Leonida Radio al iniciar sesión en Spotify en el mismo navegador. Spotify puede ofrecer solo una vista previa en otras sesiones. Por el aislamiento entre orígenes, la app no puede confirmar que un iframe de Spotify aparentemente cargado esté reproduciendo. [Solución de problemas de Spotify](https://developer.spotify.com/documentation/embeds/tutorials/troubleshooting)
-- **YouTube.** El iframe oficial usa `listType=playlist`, `list`, `enablejsapi=1` y el origen de la página. La API aporta estados de error, como videos privados o bloqueados para incrustación. Si la API se bloquea, permanece disponible el iframe estándar. Se conserva el encabezado de referencia en peticiones HTTPS y el reproductor tiene al menos 200 px de alto. [Parámetros del reproductor](https://developers.google.com/youtube/player_parameters) · [Referencia de la API](https://developers.google.com/youtube/iframe_api_reference)
+- **YouTube.** El iframe oficial usa `/embed/VIDEO_ID` para videos, y `listType=playlist` y `list` para playlists. Ambas variantes usan `enablejsapi=1` y el origen de la página. Las selecciones incluidas de videos usan `playlist` para reproducir varias pistas en un solo iframe. Si una pista está bloqueada se intenta la siguiente antes de cambiar de emisora. La API aporta estados de error, como videos privados o bloqueados para incrustación. Si la API se bloquea, permanece disponible el iframe estándar. Se conserva el encabezado de referencia en peticiones HTTPS y el reproductor tiene al menos 200 px de alto. [Parámetros del reproductor](https://developers.google.com/youtube/player_parameters) · [Referencia de la API](https://developers.google.com/youtube/iframe_api_reference)
 - **Navegadores.** El usuario pulsa reproducir en los controles oficiales. Al cambiar de estación se desmonta el iframe anterior. Un tiempo de espera y los errores detectables muestran ayuda. El enlace al proveedor siempre está visible. La app no extrae, descarga ni redistribuye audio.
 
 ## Diseño y aceptación

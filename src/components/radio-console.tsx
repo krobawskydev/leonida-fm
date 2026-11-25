@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 import { useScreenTransition } from "@/hooks/use-screen-transition";
 import { useStations } from "@/hooks/use-stations";
-import { DEFAULT_KEY, PROVIDERS, nextPlayable, shareHref, stationKey } from "@/lib/stations";
-import type { Station } from "@/types/station";
+import { DEFAULT_KEY, PROVIDERS, matchingPresetKey, nextPlayable, shareHref, stationKey } from "@/lib/stations";
+import type { Provider, Station } from "@/types/station";
 import { CarSceneLayer } from "./car-scene-layer";
 import { RadioPlayer } from "./radio-player";
 import { StationDialog } from "./station-dialog";
@@ -19,6 +19,8 @@ function initials(name: string) {
 }
 
 const ticks = Array.from({ length: 49 }, (_, index) => index);
+const WHEEL_STATIONS = 8;
+const providers = Object.entries(PROVIDERS) as [Provider, string][];
 
 function ShareDialog({ station, onClose }: { station: Station; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -81,6 +83,8 @@ export function RadioConsole() {
   const openButton = useRef<HTMLButtonElement>(null);
   const collectionButton = useRef<HTMLButtonElement>(null);
   const stationHeading = useRef<HTMLHeadingElement>(null);
+  const wheel = useRef<HTMLDivElement>(null);
+  const focusTunedStation = useRef(false);
   const collectionHeading = useRef<HTMLHeadingElement>(null);
   const focusTarget = useRef<"open" | "station" | "collection" | null>(null);
   const look = useRef<HTMLDivElement>(null);
@@ -93,6 +97,9 @@ export function RadioConsole() {
   const { preview } = radio;
   const activeKey = stationKey(radio.active);
   const activeIndex = radio.stations.findIndex((station) => stationKey(station) === activeKey);
+  const wheelStart = Math.floor(activeIndex / WHEEL_STATIONS) * WHEEL_STATIONS;
+  const wheelStations = radio.stations.slice(wheelStart, wheelStart + WHEEL_STATIONS);
+  const wheelSlots = wheelStations.length + 1;
   const frequency = (88.1 + 19.8 * (activeIndex / Math.max(5, radio.stations.length - 1))).toFixed(1);
   const dialPosition = ((Number(frequency) - 88) / 20) * 100;
 
@@ -103,6 +110,12 @@ export function RadioConsole() {
     if (target === "station") stationHeading.current?.focus();
     if (target === "collection") collectionHeading.current?.focus();
   }, [view, collectionOpen]);
+
+  useEffect(() => {
+    if (!focusTunedStation.current) return;
+    focusTunedStation.current = false;
+    wheel.current?.querySelector<HTMLButtonElement>("[aria-current=true]")?.focus();
+  }, [activeKey]);
 
   useEffect(() => {
     if (view !== "radio") return;
@@ -219,7 +232,7 @@ export function RadioConsole() {
       return;
     }
     if (radio.collection.some((existing) => stationKey(existing) === key)) {
-      return "Esta playlist ya está en tus estaciones.";
+      return "Este enlace ya está en tus estaciones.";
     }
     radio.add(station);
   }
@@ -291,6 +304,21 @@ export function RadioConsole() {
           <div className="cabin" id="car-radio" ref={consolePanel} onFocusCapture={keepRadioOpen}>
             <div className="radio-bezel" aria-hidden="true" />
             <div className="radio-toolbar" hidden={view !== "radio"}>
+              <div className="radio-providers" role="group" aria-label="Plataforma de reproducción">
+                {providers.map(([provider, label]) => {
+                  const current = radio.active.provider === provider;
+                  const explore = radio.ready && !current && !matchingPresetKey(radio.active, provider);
+                  return (
+                    <button
+                      key={provider} type="button" aria-pressed={current}
+                      disabled={!radio.ready} onClick={() => radio.selectProvider(provider)}
+                    >
+                      {explore ? `Explorar ${label}` : label}
+                      {explore && <small>Sin esta emisora</small>}
+                    </button>
+                  );
+                })}
+              </div>
               {canDrive && (
                 <button type="button" className="secondary-button" onClick={backToCar}>
                   <ChevronLeft size={16} aria-hidden="true" /> Volver al volante
@@ -319,15 +347,20 @@ export function RadioConsole() {
                     <ChevronLeft size={26} aria-hidden="true" />
                   </button>
                   <div
-                    className="wheel" role="group" aria-label="Rueda de estaciones"
-                    style={{ "--count": radio.stations.length + 1 } as CSSProperties}
+                    ref={wheel} className="wheel" role="group" aria-label="Rueda de estaciones"
+                    style={{ "--count": wheelSlots } as CSSProperties}
                     onKeyDown={(event) => {
-                      if (event.key === "ArrowRight" || event.key === "ArrowDown") { event.preventDefault(); tune(1); }
-                      if (event.key === "ArrowLeft" || event.key === "ArrowUp") { event.preventDefault(); tune(-1); }
+                      if (radio.stations.length < 2) return;
+                      const forward = event.key === "ArrowRight" || event.key === "ArrowDown";
+                      const backward = event.key === "ArrowLeft" || event.key === "ArrowUp";
+                      if (!forward && !backward) return;
+                      event.preventDefault();
+                      focusTunedStation.current = true;
+                      tune(forward ? 1 : -1);
                     }}
                   >
                     <div className="wheel-ring" aria-hidden="true" />
-                    {radio.stations.map((station, index) => {
+                    {wheelStations.map((station, index) => {
                       const key = stationKey(station);
                       const current = key === activeKey;
                       const isPreview = station === radio.preview;
@@ -335,7 +368,7 @@ export function RadioConsole() {
                         <button
                           key={key} type="button"
                           className={`wheel-node${current ? " is-active" : ""}`}
-                          style={{ "--angle": `${(360 / (radio.stations.length + 1)) * index}deg`, "--tone": `var(--tone-${index % 3})` } as CSSProperties}
+                          style={{ "--angle": `${(360 / wheelSlots) * index}deg`, "--tone": `var(--tone-${(wheelStart + index) % 3})` } as CSSProperties}
                           aria-label={`${station.name}, ${PROVIDERS[station.provider]}`}
                           aria-current={current ? "true" : undefined}
                           title={station.name}
@@ -348,7 +381,7 @@ export function RadioConsole() {
                     })}
                     <button
                       type="button" className="wheel-node wheel-add" aria-label="Añadir estación" title="Añadir estación"
-                      style={{ "--angle": `${(360 / (radio.stations.length + 1)) * radio.stations.length}deg` } as CSSProperties}
+                      style={{ "--angle": `${(360 / wheelSlots) * wheelStations.length}deg` } as CSSProperties}
                       disabled={!radio.ready} onClick={() => setEditor("new")}
                     >
                       <Plus size={20} aria-hidden="true" />
@@ -390,14 +423,14 @@ export function RadioConsole() {
             >
               <div className="collection-head">
                 <span className="section-label"><AudioLines size={17} aria-hidden="true" /> Colección</span>
-                <h2 id="collection-heading" ref={collectionHeading} tabIndex={-1}>Mis estaciones</h2>
+                <h2 id="collection-heading" ref={collectionHeading} tabIndex={-1}>Mis estaciones · {PROVIDERS[radio.active.provider]}</h2>
               </div>
               <ul className="station-list">
                 {radio.stations.map((station) => {
                   const key = stationKey(station);
                   const current = activeKey === key;
-                  const fixed = key === DEFAULT_KEY;
                   const preview = station === radio.preview;
+                  const fixed = !preview && !radio.saved.stations.some((saved) => stationKey(saved) === key);
                   return (
                     <li key={key} className={`station-row${current ? " is-active" : ""}`}>
                       <button
@@ -438,9 +471,6 @@ export function RadioConsole() {
               <button type="button" className="add-station" disabled={!radio.ready} onClick={() => setEditor("new")}>
                 <Plus size={19} aria-hidden="true" /> Añadir estación
               </button>
-              {radio.collection.length === 1 && !radio.preview && (
-                <p className="collection-note">Convierte una playlist de Spotify o YouTube en una estación de tu radio.</p>
-              )}
             </aside>
           </div>
         </div>
@@ -451,7 +481,7 @@ export function RadioConsole() {
         <small>Unofficial fan-made project. Not affiliated with Rockstar Games or Take-Two Interactive.</small>
       </footer>
 
-      {editor && <StationDialog station={editor === "new" ? undefined : editor} onSave={save} onClose={() => setEditor(undefined)} />}
+      {editor && <StationDialog station={editor === "new" ? undefined : editor} initialProvider={radio.active.provider} onSave={save} onClose={() => setEditor(undefined)} />}
       {shared && <ShareDialog station={shared} onClose={() => setShared(undefined)} />}
     </div>
   );

@@ -2,20 +2,21 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
-import { NAME_LIMIT, PROVIDERS, normalizeName, oembedProblem, parsePlaylist, youtubeOembedUrl } from "@/lib/stations";
+import { NAME_LIMIT, PROVIDERS, normalizeName, oembedProblem, parseStationUrl, stationKey, youtubeOembedUrl } from "@/lib/stations";
 import type { Provider, Station } from "@/types/station";
 
 interface Props {
   station?: Station;
+  initialProvider: Provider;
   onClose: () => void;
   onSave: (station: Station) => string | undefined;
 }
 
-export function StationDialog({ station, onClose, onSave }: Props) {
+export function StationDialog({ station, initialProvider, onClose, onSave }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const nameInput = useRef<HTMLInputElement>(null);
   const urlInput = useRef<HTMLInputElement>(null);
-  const [provider, setProvider] = useState<Provider>(station?.provider ?? "spotify");
+  const [provider, setProvider] = useState<Provider>(station?.provider ?? initialProvider);
   const [error, setError] = useState<{ field: "name" | "url"; message: string }>();
   const [checking, setChecking] = useState(false);
   const [warned, setWarned] = useState<string>();
@@ -24,10 +25,10 @@ export function StationDialog({ station, onClose, onSave }: Props) {
     dialog.current?.showModal();
   }, []);
 
-  async function embedWarning(playlistId: string) {
+  async function embedWarning(candidate: Station) {
     try {
-      const response = await fetch(youtubeOembedUrl(playlistId), { signal: AbortSignal.timeout(4000) });
-      return oembedProblem(response.status);
+      const response = await fetch(youtubeOembedUrl(candidate), { signal: AbortSignal.timeout(4000) });
+      return oembedProblem(response.status, candidate.videoId !== undefined);
     } catch {
       return null; // Offline or blocked: the check is advisory only.
     }
@@ -41,24 +42,26 @@ export function StationDialog({ station, onClose, onSave }: Props) {
       nameInput.current?.focus();
       return;
     }
-    const playlistId = station?.playlistId ?? parsePlaylist(urlInput.current?.value ?? "", provider);
-    if (!playlistId) {
-      setError({ field: "url", message: `Pega un enlace HTTPS de una playlist compatible con ${PROVIDERS[provider]}.` });
+    const candidate = station ? { ...station, name } : parseStationUrl(urlInput.current?.value ?? "", provider, name);
+    if (!candidate) {
+      const media = provider === "youtube" ? "un video o playlist de YouTube" : "una playlist de Spotify";
+      setError({ field: "url", message: `Pega un enlace HTTPS a ${media}.` });
       urlInput.current?.focus();
       return;
     }
-    if (!station && provider === "youtube" && warned !== playlistId) {
+    const key = stationKey(candidate);
+    if (!station && provider === "youtube" && warned !== key) {
       setChecking(true);
-      const warning = await embedWarning(playlistId);
+      const warning = await embedWarning(candidate);
       setChecking(false);
       if (warning) {
-        setWarned(playlistId);
+        setWarned(key);
         setError({ field: "url", message: `${warning} Pulsa «Guardar estación» otra vez para añadirla de todos modos.` });
         urlInput.current?.focus();
         return;
       }
     }
-    const message = onSave({ provider, playlistId, name });
+    const message = onSave(candidate);
     if (message) {
       setError({ field: "url", message });
       urlInput.current?.focus();
@@ -93,16 +96,16 @@ export function StationDialog({ station, onClose, onSave }: Props) {
               </div>
             </fieldset>
             <label className="form-field">
-              Enlace de la playlist
+              {provider === "youtube" ? "Enlace del video o playlist" : "Enlace de la playlist"}
               <input
                 ref={urlInput} type="url" name="url" autoFocus required maxLength={2048}
-                placeholder={provider === "spotify" ? "https://open.spotify.com/playlist/…" : "https://www.youtube.com/playlist?list=…"}
+                placeholder={provider === "spotify" ? "https://open.spotify.com/playlist/…" : "https://www.youtube.com/watch?v=…"}
                 aria-invalid={error?.field === "url"}
                 aria-describedby={error?.field === "url" ? "station-error" : "playlist-hint"}
                 onChange={() => { if (error?.field === "url") setError(undefined); }}
               />
             </label>
-            <p id="playlist-hint" className="form-hint">Usa el enlace de una playlist compartible.</p>
+            <p id="playlist-hint" className="form-hint">{provider === "youtube" ? "Puedes usar un mix, un video o una playlist pública." : "Usa el enlace de una playlist compartible."}</p>
           </>
         )}
         <label className="form-field">

@@ -4,6 +4,8 @@
 
 - [ ] Probar la reproducción de Spotify y YouTube desde los controles oficiales.
 - [ ] Abrir una estación compartida en una ventana privada y comprobar la tarjeta social.
+- [ ] Alternar Spotify y YouTube y comprobar que el dial, la colección y el reproductor correspondan al proveedor activo. Probar la nueva selección de Cocoteo FM, el salto de videos bloqueados y un enlace compartido de video.
+- [ ] Cambiar entre Spotify y YouTube desde CircoLoco para comprobar que se conserva la emisora. Desde V-Rock en Spotify, comprobar el aviso y el acceso al catálogo de YouTube.
 
 ## Ideas para contribuir
 

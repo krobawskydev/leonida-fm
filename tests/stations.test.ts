@@ -2,13 +2,16 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   DEFAULT_KEY, DEFAULT_STATION, emptyRadio, nextPlayable, normalizeName, oembedProblem, parsePlaylist,
-  readSavedRadio, readSharedStation, shareHref, stationKey, youtubeOembedUrl,
+  parseStationUrl, providerUrl, readSavedRadio, readSharedStation, shareHref, stationCollection,
+  stationForProvider, stationKey, youtubeOembedUrl,
 } from "../src/lib/stations.ts";
 import type { Station } from "../src/types/station.ts";
+import { DEFAULT_YOUTUBE_STATION, youtubeQueue } from "../src/lib/station-presets.ts";
 
 const spotify = "18CtdtRLbksPWxGq7Kn9ZD";
 const youtube = "PLBCF2DAC6FFB574DE";
 const custom: Station = { provider: "youtube", playlistId: youtube, name: "Vía & neón 🎧" };
+const mix: Station = { provider: "youtube", videoId: "gTHYH1CefOk", name: "Mix nocturno" };
 
 test("acepta playlists Spotify y variantes con idioma y parámetros", () => {
   assert.equal(parsePlaylist(`https://open.spotify.com/playlist/${spotify}?si=abc`, "spotify"), spotify);
@@ -52,6 +55,73 @@ test("rechaza orígenes falsos, credenciales, enlaces ambiguos y recursos ajenos
   assert.equal(normalizeName("a".repeat(61)), null);
 });
 
+test("acepta mixes de YouTube y conserva el significado de los enlaces de playlists", () => {
+  assert.deepEqual(parseStationUrl(providerUrl(mix), "youtube", mix.name), mix);
+  assert.deepEqual(parseStationUrl("https://youtu.be/gTHYH1CefOk?t=30", "youtube", mix.name), mix);
+  assert.deepEqual(parseStationUrl(`https://youtu.be/gTHYH1CefOk?list=${youtube}`, "youtube", custom.name), custom);
+  for (const url of [
+    "https://youtube.com.bad.invalid/watch?v=gTHYH1CefOk",
+    "https://youtube.com/watch?v=gTHYH1CefOk&v=abcd1234567",
+    "https://youtu.be/gTHYH1CefOk?list=RDMM",
+    "https://youtube.com/watch_videos?video_ids=gTHYH1CefOk",
+  ]) {
+    assert.equal(parseStationUrl(url, "youtube", mix.name), null);
+  }
+  assert.equal(parseStationUrl(providerUrl(mix), "spotify", mix.name), null);
+});
+
+test("comparte y recupera estaciones de video sin alterar el formato de playlists", () => {
+  const { searchParams } = new URL(shareHref(mix, "https://leonida-fm.test/"));
+  assert.deepEqual(readSharedStation(searchParams), mix);
+  assert.ok(searchParams.has("video"));
+  searchParams.append("playlist", youtube);
+  assert.equal(readSharedStation(searchParams), null);
+  const saved = { version: 1, stations: [custom, mix], selectedKey: stationKey(mix) };
+  assert.deepEqual(readSavedRadio(JSON.stringify(saved)), saved);
+});
+
+test("elige una estación del proveedor y preserva el nombre local al coincidir con una sugerida", () => {
+  const presets = stationCollection([]);
+  const starter = stationForProvider(presets, "youtube");
+  const customStarter = { ...starter, name: "Mi Cocoteo" };
+  const collection = stationCollection([custom, customStarter]);
+  assert.deepEqual(collection.filter((station) => stationKey(station) === stationKey(starter)), [customStarter]);
+  assert.deepEqual(stationForProvider(collection, "youtube"), customStarter);
+  assert.deepEqual(stationForProvider(collection, "youtube", stationKey(custom)), custom);
+  assert.deepEqual(stationForProvider(collection, "spotify", stationKey(custom)), DEFAULT_STATION);
+  const saved = { version: 1, stations: [], selectedKey: stationKey(starter) };
+  assert.deepEqual(readSavedRadio(JSON.stringify(saved)), saved);
+});
+
+test("los catálogos incluidos tienen enlaces válidos y conservan la estación de Cocoteo", () => {
+  const presets = stationCollection([]);
+  assert.equal(presets.filter((station) => station.provider === "spotify").length, 23);
+  assert.equal(presets.filter((station) => station.provider === "youtube").length, 10);
+  assert.equal(new Set(presets.map(stationKey)).size, presets.length);
+  for (const station of presets) {
+    const { searchParams } = new URL(shareHref(station, "https://leonida-fm.test/"));
+    assert.deepEqual(readSharedStation(searchParams), station);
+    const queue = youtubeQueue(station.videoId);
+    if (queue) {
+      assert.ok(queue.length > 1);
+      assert.ok(queue.every((id) => /^[a-zA-Z0-9_-]{11}$/.test(id)));
+      assert.equal(new URL(providerUrl(station)).searchParams.get("v"), queue[0]);
+    }
+  }
+  const circoloco = presets.find((station) => station.provider === "youtube" && station.name === "CircoLoco Records Radio");
+  assert.ok(circoloco);
+  const circolocoUrl = "https://www.youtube.com/playlist?list=PLWHWWpDdwuvo";
+  assert.equal(providerUrl(circoloco), circolocoUrl);
+  assert.deepEqual(parseStationUrl(circolocoUrl, "youtube", circoloco.name), circoloco);
+  for (const videoId of ["FOAnBR8LugM", "6j3LxlbQ4Uo"]) {
+    const station = presets.find((preset) => preset.videoId === videoId);
+    assert.ok(station);
+    assert.equal(providerUrl(station), `https://www.youtube.com/watch?v=${videoId}`);
+  }
+  assert.equal(stationKey(DEFAULT_YOUTUBE_STATION), "youtube:video:ATokyG0gs8k");
+  assert.notEqual(new URL(providerUrl(DEFAULT_YOUTUBE_STATION)).searchParams.get("v"), DEFAULT_YOUTUBE_STATION.videoId);
+});
+
 test("comparte nombre Unicode y conserva solo los datos de la estación", () => {
   const url = new URL(shareHref(custom, "https://leonida-fm.test/?other=private#hash"));
   assert.equal(url.origin, "https://leonida-fm.test");
@@ -90,10 +160,11 @@ test("recupera valores iniciales ante JSON corrupto, ausente o de versión desco
 
 test("clasifica respuestas oEmbed de YouTube", () => {
   assert.equal(oembedProblem(200), null);
-  assert.match(oembedProblem(404) ?? "", /privada|eliminada/);
+  assert.match(oembedProblem(404) ?? "", /playlist.*privado/);
+  assert.match(oembedProblem(404, true) ?? "", /video/);
   assert.match(oembedProblem(401) ?? "", /incrustar/);
   assert.equal(oembedProblem(500), null);
-  assert.ok(youtubeOembedUrl("PLabc1234567890").startsWith("https://www.youtube.com/oembed?url="));
+  assert.equal(new URL(youtubeOembedUrl(mix)).searchParams.get("url"), providerUrl(mix));
 });
 
 test("salta a la siguiente estación reproducible de forma circular", () => {

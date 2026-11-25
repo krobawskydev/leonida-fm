@@ -317,7 +317,6 @@ button:disabled { cursor: default; opacity: .5; }
   background: #232033;
 }
 .add-station:hover:not(:disabled) { background: #302a40; border-color: var(--rose); }
-.collection-note { color: var(--muted); font-size: .87rem; margin: .8rem 0 .1rem; }
 .site-footer {
   padding-block: 1.25rem 1.6rem;
   display: flex;
@@ -575,6 +574,19 @@ button:disabled { cursor: default; opacity: .5; }
 }
 .radio-toolbar .secondary-button { background: #191a23; border-color: #8d6d595e; }
 .radio-toolbar .secondary-button:hover:not(:disabled) { border-color: var(--teal); }
+.radio-providers { display: inline-flex; gap: .25rem; }
+.radio-providers button {
+  min-height: 2.75rem;
+  padding-inline: .75rem;
+  border: 1px solid #8d6d595e;
+  border-radius: .65rem;
+  background: #191a23;
+  font-size: .85rem;
+  font-weight: 650;
+}
+.radio-providers button:hover:not(:disabled) { border-color: var(--teal); }
+.radio-providers button[aria-pressed="true"] { border-color: #6fa89e; background: #22343a; color: var(--teal); }
+.radio-providers button small { display: block; color: var(--muted); font-size: .75rem; }
 .screen, .tray {
   min-width: 0;
   border: 1px solid #573e35;

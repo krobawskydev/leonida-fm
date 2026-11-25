@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, TriangleAlert } from "lucide-react";
+import { youtubeQueue } from "@/lib/station-presets";
 import { PROVIDERS, providerUrl } from "@/lib/stations";
 import type { Station } from "@/types/station";
 
@@ -11,6 +12,8 @@ const SKIP_DELAY = 5;
 
 interface YouTubePlayer {
   destroy(): void;
+  getPlaylistIndex(): number;
+  playVideoAt(index: number): void;
 }
 
 interface YouTubeApi {
@@ -90,7 +93,7 @@ export function RadioPlayer({ station, onUnplayable, onSkip }: Props) {
   const [blocked, setBlocked] = useState(false);
   const [next, setNext] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(SKIP_DELAY);
-  const { provider, playlistId, name } = station;
+  const { provider, playlistId, videoId, name } = station;
   const platform = PROVIDERS[provider];
 
   useEffect(() => {
@@ -119,20 +122,34 @@ export function RadioPlayer({ station, onUnplayable, onSkip }: Props) {
       iframe.src = `https://open.spotify.com/embed/playlist/${playlistId}`;
       iframe.height = "352";
     } else {
+      const queue = youtubeQueue(videoId);
       const params = new URLSearchParams({
-        listType: "playlist",
-        list: playlistId,
         enablejsapi: "1",
         origin: window.location.origin,
         playsinline: "1",
       });
-      iframe.src = `https://www.youtube.com/embed?${params}`;
+      if (playlistId !== undefined) {
+        params.set("listType", "playlist");
+        params.set("list", playlistId);
+      }
+      if (queue) params.set("playlist", queue.slice(1).join(","));
+      const firstVideo = queue?.[0] ?? videoId;
+      iframe.src = `https://www.youtube.com/embed${firstVideo ? `/${firstVideo}` : ""}?${params}`;
       void loadYouTubeApi().then((api) => {
         if (!alive) return;
+        let nextIndex = 1;
         player = new api.Player(iframe, {
           events: {
             onError: (event) => {
               if (!alive) return;
+              if (queue && player && [2, 5, 100, 101, 150].includes(event.data)) {
+                const index = Math.max(nextIndex, player.getPlaylistIndex() + 1);
+                if (index < queue.length) {
+                  nextIndex = index + 1;
+                  player.playVideoAt(index);
+                  return;
+                }
+              }
               setError(youtubeError(event.data));
               setBlocked(true);
               setNext(onUnplayable?.() ?? null);
@@ -152,7 +169,7 @@ export function RadioPlayer({ station, onUnplayable, onSkip }: Props) {
       iframe.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playlistId, provider]);
+  }, [playlistId, provider, videoId]);
 
   useEffect(() => {
     if (!blocked || !next || !onSkip) return;
@@ -167,7 +184,7 @@ export function RadioPlayer({ station, onUnplayable, onSkip }: Props) {
   useEffect(() => {
     const iframe = frame.current?.querySelector("iframe");
     if (iframe) iframe.title = `${platform} · ${name}`;
-  }, [name, platform, playlistId]);
+  }, [name, platform, playlistId, videoId]);
 
   return (
     <section className="player-section" aria-labelledby="player-heading">
