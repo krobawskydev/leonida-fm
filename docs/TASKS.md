@@ -10,6 +10,7 @@
 - [ ] Ajustar la velocidad del vehículo y comprobar que el cambio se aplique al instante y se conserve al volver de la radio.
 - [ ] Comprobar que el vehículo acelere y desacelere suavemente desde el inicio del recorrido.
 - [ ] Comprobar que el velocímetro siga la velocidad del recorrido y marque cero al pausar el paisaje.
+- [ ] Recorrer los hoteles, el paseo y la playa. Comprobar la continuidad de los carriles y las aceras al volver a los hoteles.
 
 ## Ideas para contribuir
 

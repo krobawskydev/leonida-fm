@@ -6,7 +6,6 @@ import {
 } from "./textures";
 
 export const SEG_LEN = ROAD.length;
-export const SEG_COUNT = 9;
 const FRONT = -14.6; // hotel frontage line (x)
 export const SHADOW_DIR = new THREE.Vector2(-0.52, 0.85); // where shadows fall (x, z): away from the sun at the right
 
@@ -35,6 +34,10 @@ const HOTELS: HotelSpec[] = [
   { name: "Casa Vera", w: 26, depth: 12, floors: 4, floorH: 3.2, wall: "#f5e1a6", trim: "#fffaf0", accent: "#e9857a", neon: "#7ae8d8", style: "bands", seed: 8, awning: "#e0605d", tower: { w: 5.5, extra: 1, z: -7, sign: "VERA" } },
 ];
 
+const PROMENADE_SEGMENTS = 4;
+const COAST_SEGMENTS = 3;
+export const SEG_COUNT = HOTELS.length + PROMENADE_SEGMENTS + COAST_SEGMENTS;
+
 function scaleUV(geo: THREE.BufferGeometry, su: number, sv: number) {
   const uv = geo.getAttribute("uv");
   for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
@@ -62,6 +65,7 @@ export function createStreetKit(anisotropy: number) {
   const wallMat = own(new THREE.MeshLambertMaterial({ map: own(limestoneTexture(anisotropy)), emissive: new THREE.Color("#7a5a48") }));
   const roofMat = own(new THREE.MeshLambertMaterial({ color: "#9b8f86" }));
   const poleMat = own(new THREE.MeshLambertMaterial({ color: "#555866" }));
+  const benchMat = own(new THREE.MeshLambertMaterial({ color: "#855a40" }));
   const lanternMat = own(new THREE.MeshBasicMaterial({ color: "#ffd9a0" }));
   const blobMat = own(new THREE.MeshBasicMaterial({ map: own(blobTexture()), transparent: true, opacity: 0.6, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
   const blobGeo = own(flatPlane(1, 1));
@@ -76,8 +80,6 @@ export function createStreetKit(anisotropy: number) {
   poleGeo.translate(0, 2.8, 0);
   const lanternGeo = own(new THREE.SphereGeometry(0.26, 10, 8));
   lanternGeo.translate(0, 5.75, 0);
-
-  const hotelCache = new Map<number, THREE.Group>();
 
   function box(w: number, h: number, d: number, material: THREE.Material | THREE.Material[], x: number, y: number, z: number) {
     const geo = own(new THREE.BoxGeometry(w, h, d));
@@ -189,9 +191,13 @@ export function createStreetKit(anisotropy: number) {
     const rand = rng(1000 + index * 17);
     const g = new THREE.Group();
     const L = SEG_LEN;
+    // Start near the end of the hotel district so the promenade comes into view early.
+    const routeIndex = (index + HOTELS.length - 3) % SEG_COUNT;
+    const district = routeIndex < HOTELS.length ? "hotels"
+      : routeIndex < HOTELS.length + PROMENADE_SEGMENTS ? "promenade" : "coast";
 
     // Road with lane paint, kerbs and sidewalks.
-    const roadMesh = new THREE.Mesh(flatPlane(ROAD.x1 - ROAD.x0, L), road[index % 3]);
+    const roadMesh = new THREE.Mesh(own(flatPlane(ROAD.x1 - ROAD.x0, L)), road[index % 3]);
     roadMesh.position.set((ROAD.x0 + ROAD.x1) / 2, 0, 0);
     g.add(roadMesh);
     const kerbL = box(0.3, 0.17, L, curbMat, ROAD.x0 - 0.15, 0.085, 0);
@@ -221,36 +227,47 @@ export function createStreetKit(anisotropy: number) {
     beach.position.set(44.8, 0.0, 0);
     g.add(beach);
 
-    // Hotels on the left, in order, with the leftover space as a palm garden.
-    const spec = HOTELS[index % HOTELS.length];
-    let hotel = hotelCache.get(index % HOTELS.length);
-    if (!hotel) { hotel = buildHotel(spec); hotelCache.set(index % HOTELS.length, hotel); }
-    const clone = hotel.clone();
-    const hz = -L / 2 + spec.w / 2 + 1 + rand() * (L - spec.w - 2);
-    clone.position.set(FRONT, 0.17, hz);
-    g.add(clone);
+    if (district === "hotels") addHotelFrontage(g, HOTELS[routeIndex], rand);
+    else {
+      const verge = new THREE.Mesh(own(flatPlane(14, L, 3.5, L / 4)), grass);
+      verge.position.set(FRONT - 7, 0.03, 0);
+      g.add(verge);
+    }
+    if (district === "promenade") {
+      for (const z of [-10, 10]) {
+        const x = FRONT - 1.5;
+        g.add(
+          box(0.55, 0.12, 2.0, benchMat, x, 0.5, z),
+          box(0.1, 0.33, 2.0, benchMat, x - 0.24, 0.73, z),
+          box(0.44, 0.47, 0.12, poleMat, x, 0.26, z - 0.75),
+          box(0.44, 0.47, 0.12, poleMat, x, 0.26, z + 0.75),
+        );
+      }
+    }
 
     // Palms (right side park, plus planters on the left sidewalk).
     const palmSpecs: PalmSpec[] = [];
-    for (let k = 0; k < 5; k++) {
+    const roadsidePalms = district === "coast" ? 0 : 5;
+    for (let k = 0; k < roadsidePalms; k++) {
       palmSpecs.push({
         x: 9.3 + rand() * 1.6 + (k % 2) * 1.9, z: -L / 2 + (k + 0.2 + rand() * 0.6) * (L / 5), height: 8.5 + rand() * 4,
         lean: 0.03 + rand() * 0.07, dir: rand() * Math.PI * 2, scale: 0.9 + rand() * 0.3, tint: rand(),
       });
     }
-    for (let k = 0; k < 4; k++) {
+    const parkPalms = district === "coast" ? 2 : 4;
+    for (let k = 0; k < parkPalms; k++) {
       palmSpecs.push({
         x: 17 + rand() * 15, z: -L / 2 + rand() * L, height: 6.5 + rand() * 3.5,
         lean: 0.1 + rand() * 0.18, dir: rand() * Math.PI * 2, scale: 0.9 + rand() * 0.3, tint: rand(),
       });
     }
-    // Left sidewalk planters with small palms in front of the hotel.
-    const gap = L - spec.w;
-    for (let k = 0; k < 3; k++) {
-      const zz = -L / 2 + (k + 0.5) * (L / 3) + (rand() - 0.5) * 3;
-      palmSpecs.push({ x: FRONT + 1.6 + rand() * 1.2, z: zz, height: 4.2 + rand() * 2.2, lean: 0.05 + rand() * 0.08, dir: rand() * Math.PI * 2, scale: 0.7, tint: rand() });
+    const leftPalms = district === "promenade" ? 6 : district === "hotels" ? 3 : 1;
+    for (let k = 0; k < leftPalms; k++) {
+      const z = -L / 2 + (k + 0.5) * (L / leftPalms) + (rand() - 0.5) * 3;
+      const x = district === "hotels" ? FRONT + 1.6 + rand() * 1.2 : FRONT - 4.0 - rand() * 7;
+      const height = district === "promenade" ? 8.5 + rand() * 4 : 4.2 + rand() * 2.2;
+      palmSpecs.push({ x, z, height, lean: 0.05 + rand() * 0.08, dir: rand() * Math.PI * 2, scale: 0.8, tint: rand() });
     }
-    void gap;
     g.add(palms.build(palmSpecs, SHADOW_DIR));
 
     // Street lamps (kerb on both sides).
@@ -263,6 +280,28 @@ export function createStreetKit(anisotropy: number) {
         g.add(pole, lantern, shadowBlob(lx - 2.4, lz + 4, 0.9, 7, 0.6));
       }
     }
+
+    // Leave the middle beach segment clear for an uninterrupted view of the sea.
+    if (district === "coast" && (routeIndex === SEG_COUNT - COAST_SEGMENTS || routeIndex === SEG_COUNT - 1)) {
+      const color = routeIndex === SEG_COUNT - 1 ? "#f6c26b" : "#f48fb1";
+      const hutMat = own(new THREE.MeshLambertMaterial({ color }));
+      const hut = box(2.2, 1.7, 2.2, hutMat, 42, 1.9, rand() * 20 - 10);
+      const roofTop = box(2.8, 0.18, 2.8, own(new THREE.MeshLambertMaterial({ color: "#f6efe2" })), 42, 2.85, hut.position.z);
+      const legGeo = own(new THREE.CylinderGeometry(0.07, 0.07, 1.1, 5));
+      const legs = [[-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0.9, 0.9]].map(([lx, lz]) => {
+        const leg = new THREE.Mesh(legGeo, poleMat); leg.position.set(42 + lx, 0.55, hut.position.z + lz); return leg;
+      });
+      g.add(hut, roofTop, ...legs, shadowBlob(41.2, hut.position.z + 1.5, 4.5, 6));
+    }
+
+    return g;
+  }
+
+  function addHotelFrontage(g: THREE.Group, spec: HotelSpec, rand: ReturnType<typeof rng>) {
+    const hotel = buildHotel(spec);
+    const hz = -SEG_LEN / 2 + spec.w / 2 + 1 + rand() * (SEG_LEN - spec.w - 2);
+    hotel.position.set(FRONT, 0.17, hz);
+    g.add(hotel);
 
     // Café tables with umbrellas on the sidewalk.
     const count = 5;
@@ -286,22 +325,6 @@ export function createStreetKit(anisotropy: number) {
       list.forEach((mx, i) => mesh.setMatrixAt(i, mx));
       g.add(mesh);
     }
-
-    // A lifeguard hut on the beach in some segments.
-    if (index % 3 === 1) {
-      const colors = ["#f48fb1", "#7fd4c6", "#f6c26b"];
-      const hutMat = own(new THREE.MeshLambertMaterial({ color: colors[(index / 3) | 0 % 3] }));
-      const hut = box(2.2, 1.7, 2.2, hutMat, 44, 1.9, rand() * 20 - 10);
-      const roofTop = box(2.8, 0.18, 2.8, own(new THREE.MeshLambertMaterial({ color: "#f6efe2" })), 44, 2.85, hut.position.z);
-      const legGeo = own(new THREE.CylinderGeometry(0.07, 0.07, 1.1, 5));
-      const legs = [[-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0.9, 0.9]].map(([lx, lz]) => {
-        const leg = new THREE.Mesh(legGeo, poleMat); leg.position.set(44 + lx, 0.55, hut.position.z + lz); return leg;
-      });
-      g.add(hut, roofTop, ...legs, shadowBlob(43.2, hut.position.z + 1.5, 4.5, 6));
-    }
-
-    g.userData.index = index;
-    return g;
   }
 
   return {
