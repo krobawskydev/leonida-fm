@@ -96,7 +96,7 @@ test("elige una estación del proveedor y preserva el nombre local al coincidir 
 test("los catálogos incluidos tienen enlaces válidos y conservan la estación de Cocoteo", () => {
   const presets = stationCollection([]);
   assert.equal(presets.filter((station) => station.provider === "spotify").length, 23);
-  assert.equal(presets.filter((station) => station.provider === "youtube").length, 10);
+  assert.equal(presets.filter((station) => station.provider === "youtube").length, 8);
   assert.equal(new Set(presets.map(stationKey)).size, presets.length);
   for (const station of presets) {
     const { searchParams } = new URL(shareHref(station, "https://leonida-fm.test/"));
@@ -113,11 +113,6 @@ test("los catálogos incluidos tienen enlaces válidos y conservan la estación 
   const circolocoUrl = "https://www.youtube.com/playlist?list=PLWHWWpDdwuvo";
   assert.equal(providerUrl(circoloco), circolocoUrl);
   assert.deepEqual(parseStationUrl(circolocoUrl, "youtube", circoloco.name), circoloco);
-  for (const videoId of ["FOAnBR8LugM", "6j3LxlbQ4Uo"]) {
-    const station = presets.find((preset) => preset.videoId === videoId);
-    assert.ok(station);
-    assert.equal(providerUrl(station), `https://www.youtube.com/watch?v=${videoId}`);
-  }
   assert.equal(stationKey(DEFAULT_YOUTUBE_STATION), "youtube:video:ATokyG0gs8k");
   assert.notEqual(new URL(providerUrl(DEFAULT_YOUTUBE_STATION)).searchParams.get("v"), DEFAULT_YOUTUBE_STATION.videoId);
 });

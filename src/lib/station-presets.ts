@@ -71,8 +71,6 @@ export const PRESET_STATIONS: readonly Station[] = [
   ...spotifyStations.map(([name, playlistId]): Station => ({ provider: "spotify", playlistId, name })),
   ...youtubeStations.map(({ station }) => station),
   { provider: "youtube", playlistId: "PLWHWWpDdwuvo", name: "CircoLoco Records Radio" },
-  { provider: "youtube", videoId: "FOAnBR8LugM", name: "Mix de YouTube 1" },
-  { provider: "youtube", videoId: "6j3LxlbQ4Uo", name: "Mix de YouTube 2" },
 ];
 
 const youtubeQueues = new Map<string, readonly string[]>(youtubeStations.map(({ station, videos }) => [station.videoId, videos]));
