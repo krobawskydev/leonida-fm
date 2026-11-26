@@ -2,6 +2,7 @@
 
 ## Verificación en el sitio público
 
+- [ ] Comprobar que el crédito de autoría del pie de página abre el portafolio desde la radio y el volante.
 - [ ] Probar la reproducción de Spotify y YouTube desde los controles oficiales.
 - [ ] En Spotify, comprobar que al cargar la página haya que pulsar Play y que después se intente reproducir automáticamente al cambiar de emisora. Verificar que Play siga disponible si el navegador bloquea el arranque.
 - [ ] Volver al volante con Spotify y YouTube. Comprobar que el mismo reproductor siga sonando dentro de la pantalla del tablero y que vuelva al tamaño completo al abrir la radio.

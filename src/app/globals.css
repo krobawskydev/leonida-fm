@@ -363,6 +363,13 @@ button:disabled { cursor: default; opacity: .5; }
 .footer-brand { font-size: .86rem; font-weight: 700; color: var(--text); }
 .footer-brand svg { color: var(--teal); }
 .site-footer small { font-size: .77rem; line-height: 1.5; }
+.footer-author {
+  color: var(--teal);
+  pointer-events: auto;
+  text-decoration: underline;
+  text-underline-offset: .16em;
+}
+.footer-author:hover { color: var(--text); }
 
 .station-dialog {
   position: fixed;

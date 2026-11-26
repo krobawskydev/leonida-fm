@@ -8,6 +8,8 @@ Radio web personal y gratuita. Sintoniza **Leonida Radio** en Spotify o añade t
 
 [Escuchar Leonida FM](https://leonida-fm.vercel.app/)
 
+Creado por [krobawskydev](https://my-projects-plum-kappa.vercel.app/).
+
 ## Ejecutar en local
 
 Usa Node.js 22.13 o posterior de la rama 22, o Node.js 24 o superior. El proyecto incluye `.nvmrc` para usar Node.js 22 con `nvm`.

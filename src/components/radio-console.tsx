@@ -8,6 +8,7 @@ import {
 import { useScreenTransition } from "@/hooks/use-screen-transition";
 import { useStations } from "@/hooks/use-stations";
 import { MAX_SPEED_KMH, MIN_SPEED_KMH } from "@/lib/driving-speed";
+import { projectAuthor } from "@/lib/project-author";
 import { DEFAULT_KEY, PROVIDERS, favoriteStationKey, nextPlayable, shareHref, stationKey, stationProfile, stationWindowStart } from "@/lib/stations";
 import type { Provider, Station } from "@/types/station";
 import { CarSceneLayer } from "./car-scene-layer";
@@ -618,7 +619,10 @@ export function RadioConsole() {
 
       <footer className="shell site-footer">
         <span className="footer-brand"><RadioTower size={17} aria-hidden="true" /> Leonida FM</span>
-        <small>Unofficial fan-made project. Not affiliated with Rockstar Games or Take-Two Interactive.</small>
+        <small>
+          Creado por <a className="footer-author" href={projectAuthor.url}>{projectAuthor.name}</a>.
+          {" "}Unofficial fan-made project. Not affiliated with Rockstar Games or Take-Two Interactive.
+        </small>
       </footer>
 
       {editor && <StationDialog station={editor === "new" ? undefined : editor} initialProvider={radio.active.provider} onSave={save} onClose={() => setEditor(undefined)} />}

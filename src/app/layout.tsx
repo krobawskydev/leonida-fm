@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { projectAuthor } from "@/lib/project-author";
 import "./globals.css";
 
 const title = "Leonida FM · Your World. Your Frequency.";
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
   title,
   description,
   applicationName: "Leonida FM",
+  authors: [projectAuthor],
   openGraph: {
     title,
     description,
