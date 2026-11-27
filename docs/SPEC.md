@@ -44,7 +44,9 @@ La validación es sintáctica. Se rechazan álbumes de Spotify, listas personali
 
 `Station` contiene el proveedor, el nombre y un identificador de playlist o video. Las estaciones incluidas se definen en código. Si una estación incluida coincide con una que ya se guardó, prevalece la estación personalizada. La clave `leonida-fm:stations` guarda `{ version: 1, stations, selectedKey }` y, cuando existen, las favoritas y el progreso de desbloqueo. Se descartan entradas inválidas y duplicadas, se recupera el esquema inicial sin versión y se conservan datos de versiones futuras hasta que el usuario haga un cambio explícito.
 
-Define `NEXT_PUBLIC_SITE_URL` con la URL pública antes de compilar para que los metadatos y la tarjeta social usen el dominio correcto.
+La portada define la URL canónica y Open Graph usa la misma dirección. Define `NEXT_PUBLIC_SITE_URL` antes de compilar al cambiar de dominio. Si falta, se usa el dominio de producción de Vercel o `https://leonida-fm.vercel.app/`.
+
+Vercel Web Analytics mide visitas a la portada. La integración elimina los parámetros y fragmentos de la URL de la página antes de enviar el evento.
 
 ## Reproducción y riesgos
 

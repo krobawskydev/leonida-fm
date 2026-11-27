@@ -11,6 +11,9 @@
 - [ ] En Spotify, comprobar que al cargar la página haya que pulsar Play y que después se intente reproducir automáticamente al cambiar de emisora. Verificar que Play siga disponible si el navegador bloquea el arranque.
 - [ ] Volver al volante con Spotify y YouTube. Comprobar que el mismo reproductor siga sonando dentro de la pantalla del tablero y que vuelva al tamaño completo al abrir la radio.
 - [ ] Abrir una estación compartida en una ventana privada y comprobar la tarjeta social.
+- [ ] Tras desplegar, comprobar que la URL canónica y la tarjeta social apuntan al dominio público, y que la descripción identifica Leonida FM como una radio hecha por fans.
+- [x] Activar Web Analytics en el proyecto de Vercel con el plan Hobby.
+- [ ] Verificar una visita en el panel de Analytics tras desplegar la integración.
 - [ ] Alternar Spotify y YouTube y comprobar que el dial, la colección y el reproductor correspondan al proveedor activo. Probar la nueva selección de Cocoteo FM, el salto de videos bloqueados y un enlace compartido de video.
 - [ ] En una playlist de YouTube por ID y en una cola curada, comprobar el salto dentro de la emisora ante varios videos bloqueados y el aviso al agotarlos. Comprobar que el error 153 mantiene la emisora y que un cambio manual cancela la recuperación anterior.
 - [ ] Abrir un enlace válido a una emisora de YouTube bloqueada y comprobar que conserva la URL y la última estación guardada. Cambiar de emisora manualmente y comprobar que se actualiza la selección guardada.
@@ -26,8 +29,15 @@
 - [ ] Desplazarse hasta el final de «Mis estaciones» y volver al volante. Comprobar que la cabina ocupe toda la ventana y se vea el encabezado.
 - [ ] Abrir la radio con el paisaje en marcha y con el paisaje en pausa. Comprobar que conserve ese estado detrás del dial.
 
+## Curaduría antes de compartir en redes
+
+- [x] **krobawskydev.** Completar la selección de house y techno para CircoLoco Records Radio. Spotify devolvió 40 pistas y la nueva fuente de la 96.1 FM quedó integrada en local. [Nueva playlist](https://open.spotify.com/playlist/2v5DuL7jdtLM9OeNRBp5RE)
+- [ ] Después de desplegar, comprobar que la 96.1 FM reproduce la nueva selección antes de compartir el enlace y el video.
+
 ## Ideas para contribuir
 
+- [ ] Preparar nuevas playlists de electrónica a partir de la primera selección de house y techno.
+- [ ] Publicar el catálogo de emisoras como `stations.json` editable en GitHub y servido por Cloudflare Pages. Cargarlo en la radio sin redeplegar la app, validar el contenido y usar el catálogo incluido como respaldo. Dar a cada emisora un ID estable y conservar las favoritas, la selección guardada y los enlaces compartidos existentes.
 - [ ] Probar el tablero con un lector de pantalla y medir el contraste de «Ver radio».
 - [ ] Verificar la [cortinilla de sintonización](SPEC.md#p2--cortinilla-de-sintonización) al cambiar desde el dial y la lista, al cambiar rápido y con movimiento reducido. Comprobar que el reproductor siga cargando al seleccionar la emisora.
 - [ ] Verificar el acceso directo a la radio, la colección y los enlaces compartidos en móvil y con el recorrido 3D desactivado.

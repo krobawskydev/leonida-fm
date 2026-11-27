@@ -15,7 +15,7 @@ Una brecha es una diferencia concreta entre el comportamiento esperado y el actu
 3. **Verificar que se encuentre «Añadir estación».** UX-002 afectó una acción principal durante la demo. Probar el recorrido de primera visita y el cierre desde el fondo de UX-001.
 4. **Revisar el enlace que se va a publicar.** Confirmar en los canales elegidos la tarjeta social de QA-005, el crédito publicado y el aviso de proyecto independiente. Revisar que el texto de difusión atribuya correctamente el contenido de BACKLOG-003 y QA-008. La URL canónica y las etiquetas detalladas de procedencia pueden esperar a una revisión posterior.
 
-**Después del lanzamiento:** los avisos intermedios de recuperación, el pulido visual móvil, las etiquetas de procedencia y las tres ideas de producto de la oficina. El alcance de esta revisión es diagnóstico y priorización.
+**Después del lanzamiento:** los avisos intermedios de recuperación, el pulido visual móvil, las etiquetas de procedencia y las ideas de producto registradas abajo. El alcance de esta revisión es diagnóstico y priorización.
 
 ## Brechas de reproducción y enlaces compartidos
 
@@ -80,10 +80,10 @@ Una brecha es una diferencia concreta entre el comportamiento esperado y el actu
 ### QA-005 · SEO y vista previa social (GAP-008 original)
 
 - **Prioridad / estado.** P1 · Open.
-- **Evidencia.** La revisión pública previa confirmó título, descripción, referencia al favicon, Open Graph, tarjeta grande de X y JPEG público de 1200 × 630. El HTML público revisado carece de URL canónica. La aclaración de proyecto fan está en el pie y el README, y la descripción de la vista previa aún no la incluye. La autoría en los metadatos forma parte de cambios locales.
+- **Evidencia.** La revisión pública previa confirmó título, descripción, referencia al favicon, Open Graph, tarjeta grande de X y JPEG público de 1200 × 630. La captura del propietario confirma que WhatsApp muestra la imagen, el título, la descripción y el dominio de la portada. El HTML público revisado carece de URL canónica. La aclaración de proyecto fan está en el pie y el README, y la descripción de la vista previa aún no la incluye. La autoría en los metadatos forma parte de cambios locales.
 - **Archivos.** [layout.tsx](../src/app/layout.tsx), [icon.svg](../src/app/icon.svg), [social-card.jpg](../public/social-card.jpg), [radio-console.tsx](../src/components/radio-console.tsx).
-- **Acción.** Definir la portada como canónica si se quiere concentrar la indexación del sitio. Mantener los parámetros funcionales de los enlaces a emisoras. Revisar el texto de la tarjeta para identificar el proyecto como fan e independiente.
-- **Pruebas.** Revisar el HTML desplegado de la portada y de un enlace de estación, la descarga del favicon y la tarjeta, y las vistas previas en WhatsApp, Discord y las redes donde se publicará.
+- **Acción.** Verificar tras el despliegue la nueva URL canónica de la portada y la descripción que identifica Leonida FM como una radio web hecha por fans. Confirmar que un enlace compartido sigue seleccionando la emisora.
+- **Pruebas.** Revisar el HTML desplegado de la portada y de un enlace de estación, la descarga del favicon y la tarjeta, y las vistas previas en Discord y las demás redes elegidas. Repetir la comprobación en WhatsApp si cambia la tarjeta o el dominio.
 
 ### QA-006 · Rendimiento móvil y carga inicial (GAP-009 original)
 
@@ -169,10 +169,24 @@ Una brecha es una diferencia concreta entre el comportamiento esperado y el actu
 - **Acción.** Evaluar una función externa al export estático con gestión de clave y cuota. Mostrar título y canal del primer resultado embebible antes de guardarlo y ofrecer pegar la URL como alternativa.
 - **Pruebas.** Coincidencia clara, resultado inesperado, cero resultados, cuota agotada, red caída, respuesta tardía y resultado impedido por restricciones de reproducción.
 
-### IDEA-003 · Picture-in-Picture
+### IDEA-003 · Picture-in-Picture fuera de la pestaña
 
 - **Prioridad / estado.** P2 · Open.
 - **Evidencia.** El iframe de YouTube declara permiso `picture-in-picture`. No hay un control de Leonida FM para abrir una miniatura ni acceso directo desde la página al elemento de video dentro del iframe. Document Picture-in-Picture admite contenido HTML con disponibilidad según navegador. [Document Picture-in-Picture](https://developer.chrome.com/docs/web-platform/document-picture-in-picture)
 - **Archivos.** [radio-player.tsx](../src/components/radio-player.tsx), [radio-console.tsx](../src/components/radio-console.tsx), [globals.css](../src/app/globals.css).
-- **Acción.** Aclarar si la miniatura debe flotar dentro de Leonida FM o permanecer encima de otras pestañas y apps. Probar primero los controles que ofrezcan reproductor y navegador. Si se implementa una miniatura propia, verificar que conserva el reproductor activo.
-- **Pruebas.** Abrir y cerrar, cambiar de estación, volver al dial, comprobar continuidad y un solo iframe, y probar el comportamiento en un navegador sin la capacidad.
+- **Acción.** Probar si el PiP nativo permite mantener el video visible al pasar a otra pestaña o app. Si hace falta un botón propio, evaluar un prototipo que conserve el reproductor activo.
+- **Pruebas.** Abrir y cerrar la ventana, cambiar de pestaña o app, volver al dial y comprobar continuidad del video, del audio y de la posición. Probar también un navegador sin la capacidad.
+
+## Otras ideas para después del lanzamiento
+
+| ID | Idea | Alcance a definir |
+| --- | --- | --- |
+| IDEA-004 | Vehículo y velocidad según la emisora | Cambiar el diseño del carro y el límite de velocidad al sintonizar. Definir cómo interactúa el límite de cada emisora con la velocidad base elegida por el usuario. |
+| IDEA-005 | Día y noche según la hora real | Adaptar la iluminación del recorrido al horario. Elegir entre la hora local del visitante y la de la ciudad que está recorriendo. |
+| IDEA-006 | Otras ciudades y pistas | Añadir escenarios y rutas. Elegir una primera ubicación y definir cómo se selecciona. |
+| IDEA-007 | Webcam en el retrovisor | Definir si el retrovisor muestra la cámara del visitante u otra fuente. Si usa la cámara del visitante, el acceso debe activarse bajo su control. |
+| IDEA-008 | Playlists de Apple Music | Evaluar una tercera plataforma y cómo encajan sus enlaces, la reproducción y las estaciones compartidas. |
+| IDEA-009 | Mejorar la miniatura al compartir | Revisar el arte y el texto de la tarjeta actual, que ya aparece en WhatsApp. Aclarar qué significa «SSR» en la propuesta. |
+| IDEA-010 | Mejorar SEO | La URL canónica y la descripción para el lanzamiento están preparadas en el código. Queda verificar el despliegue y revisar la indexación. |
+| IDEA-011 | Dominio propio | Elegir el dominio para Leonida FM y definir redirecciones, URLs compartidas y metadatos del nuevo dominio. |
+| IDEA-012 | Analítica básica del flujo de uso | Web Analytics quedó habilitado en Vercel con el plan Hobby. El conteo de visitas está integrado en el código y queda verificarlo tras el despliegue. El seguimiento de acciones como sintonizar, añadir o compartir queda para una fase posterior. |
