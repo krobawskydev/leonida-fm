@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  DEFAULT_KEY, DEFAULT_STATION, availableStations, emptyRadio, favoriteStationKey, nextPlayable, normalizeName, oembedProblem, parsePlaylist,
+  DEFAULT_KEY, DEFAULT_STATION, availableStations, emptyRadio, favoriteStationKey, nextAutomaticStation, normalizeName, oembedProblem, parsePlaylist,
   parseStationUrl, providerUrl, readSavedRadio, readSharedStation, shareHref, stationCollection,
   saveTunedStation, stationForProvider, stationKey, stationProfile, stationWindowStart, youtubeOembedUrl,
 } from "../src/lib/stations.ts";
@@ -196,10 +196,22 @@ test("salta a la siguiente estación reproducible de forma circular", () => {
   const make = (playlistId: string): Station => ({ provider: "youtube", playlistId, name: playlistId });
   const list = [make("PLaaaaaaaaaaa"), make("PLbbbbbbbbbbb"), make("PLccccccccccc")];
   const failed = new Set([stationKey(list[1])]);
-  assert.equal(nextPlayable(list, 0, failed)?.playlistId, "PLccccccccccc");
-  assert.equal(nextPlayable(list, 2, failed)?.playlistId, "PLaaaaaaaaaaa");
+  const params = new URLSearchParams();
+  assert.equal(nextAutomaticStation(list, 0, failed, params), list[2]);
+  assert.equal(nextAutomaticStation(list, 2, failed, params), list[0]);
   failed.add(stationKey(list[0])).add(stationKey(list[2]));
-  assert.equal(nextPlayable(list, 0, failed), null);
+  assert.equal(nextAutomaticStation(list, 0, failed, params), null);
+});
+
+test("mantiene la estación de un enlace válido aunque su reproducción falle", () => {
+  const stations = [custom, DEFAULT_YOUTUBE_STATION, mix];
+  const failed = new Set([stationKey(custom)]);
+  for (const shared of [custom, mix, DEFAULT_YOUTUBE_STATION, { ...custom, playlistId: "PLaaaaaaaaaaa" }]) {
+    const params = new URL(shareHref(shared, "https://leonida.test/")).searchParams;
+    assert.equal(nextAutomaticStation(stations, 0, failed, params), null);
+  }
+  const invalid = new URLSearchParams("station=1&provider=youtube");
+  assert.equal(nextAutomaticStation(stations, 0, failed, invalid), DEFAULT_YOUTUBE_STATION);
 });
 
 test("la rueda mantiene la estación activa y llena los lugares al llegar al final", () => {

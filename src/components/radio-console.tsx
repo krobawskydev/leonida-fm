@@ -9,7 +9,7 @@ import { useScreenTransition } from "@/hooks/use-screen-transition";
 import { useStations } from "@/hooks/use-stations";
 import { MAX_SPEED_KMH, MIN_SPEED_KMH } from "@/lib/driving-speed";
 import { projectAuthor } from "@/lib/project-author";
-import { DEFAULT_KEY, PROVIDERS, favoriteStationKey, nextPlayable, shareHref, stationKey, stationProfile, stationWindowStart } from "@/lib/stations";
+import { DEFAULT_KEY, PROVIDERS, favoriteStationKey, nextAutomaticStation, shareHref, stationKey, stationProfile, stationWindowStart } from "@/lib/stations";
 import type { Provider, Station } from "@/types/station";
 import { CarSceneLayer } from "./car-scene-layer";
 import { RadioPlayer } from "./radio-player";
@@ -320,13 +320,17 @@ export function RadioConsole() {
     radio.select(key);
   }
 
+  function automaticStation() {
+    return nextAutomaticStation(radio.stations, activeIndex, failed.current, new URLSearchParams(window.location.search));
+  }
+
   function reportUnplayable() {
     failed.current.add(activeKey);
-    return nextPlayable(radio.stations, activeIndex, failed.current)?.name ?? null;
+    return automaticStation()?.name ?? null;
   }
 
   function skipUnplayable() {
-    const next = nextPlayable(radio.stations, activeIndex, failed.current);
+    const next = automaticStation();
     if (next) radio.select(stationKey(next));
   }
 

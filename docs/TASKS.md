@@ -8,6 +8,8 @@
 - [ ] Volver al volante con Spotify y YouTube. Comprobar que el mismo reproductor siga sonando dentro de la pantalla del tablero y que vuelva al tamaño completo al abrir la radio.
 - [ ] Abrir una estación compartida en una ventana privada y comprobar la tarjeta social.
 - [ ] Alternar Spotify y YouTube y comprobar que el dial, la colección y el reproductor correspondan al proveedor activo. Probar la nueva selección de Cocoteo FM, el salto de videos bloqueados y un enlace compartido de video.
+- [ ] En una playlist de YouTube por ID y en una cola curada, comprobar el salto dentro de la emisora ante varios videos bloqueados y el aviso al agotarlos. Comprobar que el error 153 mantiene la emisora y que un cambio manual cancela la recuperación anterior.
+- [ ] Abrir un enlace válido a una emisora de YouTube bloqueada y comprobar que conserva la URL y la última estación guardada. Cambiar de emisora manualmente y comprobar que se actualiza la selección guardada.
 - [ ] Cambiar entre Spotify y YouTube desde CircoLoco para comprobar que se conserva la emisora. Desde V-Rock en Spotify, comprobar el aviso y el acceso al catálogo de YouTube.
 - [ ] Comprobar que CircoLoco conserve 96.1 FM y «House y techno» al cambiar de proveedor. Verificar que «Mis estaciones» muestre el género y siga el orden del dial.
 - [ ] En una sesión nueva, sintonizar cinco emisoras principales distintas en Spotify. Comprobar que las dos emisoras especiales aparezcan en el dial y sigan disponibles tras recargar.

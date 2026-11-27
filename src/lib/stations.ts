@@ -152,8 +152,13 @@ export function oembedProblem(status: number, video = false) {
   return null;
 }
 
-/** Picks the next station after `from` (circular) whose key is not in `failed`. */
-export function nextPlayable(stations: Station[], from: number, failed: ReadonlySet<string>) {
+export function nextAutomaticStation(
+  stations: Station[],
+  from: number,
+  failed: ReadonlySet<string>,
+  params: URLSearchParams,
+) {
+  if (readSharedStation(params)) return null;
   for (let step = 1; step < stations.length; step++) {
     const candidate = stations[(from + step) % stations.length];
     if (!failed.has(stationKey(candidate))) return candidate;

@@ -1,25 +1,32 @@
 "use client";
 
-import { useEffect, useRef, useState, type Ref } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type Ref } from "react";
 import { ExternalLink, TriangleAlert } from "lucide-react";
 import { youtubeQueue } from "@/lib/station-presets";
 import { PROVIDERS, providerUrl } from "@/lib/stations";
+import { isYouTubeContentError, nextYouTubeTrack } from "@/lib/youtube-recovery";
 import type { Station } from "@/types/station";
 import { SpotifyEmbed, type SpotifyTuner } from "./spotify-embed";
 
 const EMBED_PERMISSIONS = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
 const LOAD_TIMEOUT = 12_000;
 const SKIP_DELAY = 5;
+const PLAYLIST_RETRY_DELAY = 1500;
+const YOUTUBE_PLAYING = 1;
 
 interface YouTubePlayer {
   destroy(): void;
+  getPlaylist(): string[] | undefined;
   getPlaylistIndex(): number;
   playVideoAt(index: number): void;
 }
 
 interface YouTubeApi {
   Player: new (iframe: HTMLIFrameElement, config: {
-    events: { onError: (event: { data: number }) => void };
+    events: {
+      onError: (event: { data: number; target: YouTubePlayer }) => void;
+      onStateChange: (event: { data: number; target: YouTubePlayer }) => void;
+    };
   }) => YouTubePlayer;
 }
 
@@ -76,8 +83,11 @@ function loadYouTubeApi(): Promise<YouTubeApi> {
 }
 
 function youtubeError(code: number) {
+  if (code === 2) return "YouTube no pudo interpretar la solicitud del reproductor.";
+  if (code === 5) return "El reproductor de YouTube encontró un problema de reproducción.";
   if (code === 100) return "YouTube indica que este video es privado o dejó de estar disponible.";
   if (code === 101 || code === 150) return "YouTube no permite reproducir este video dentro de Leonida FM.";
+  if (code === 153) return "YouTube no pudo identificar el reproductor de Leonida FM.";
   return "YouTube no pudo reproducir este contenido.";
 }
 
@@ -97,6 +107,7 @@ export function RadioPlayer({ station, spotifyTuner, onUnplayable, onSkip }: Pro
   const [countdown, setCountdown] = useState(SKIP_DELAY);
   const { provider, playlistId, videoId, name } = station;
   const platform = PROVIDERS[provider];
+  const findNextStation = useEffectEvent(() => onUnplayable?.() ?? null);
 
   useEffect(() => {
     if (provider !== "youtube") return;
@@ -106,6 +117,10 @@ export function RadioPlayer({ station, spotifyTuner, onUnplayable, onSkip }: Pro
     const label = PROVIDERS[provider];
     let player: YouTubePlayer | undefined;
     let alive = true;
+    let terminalError = false;
+    let playlistRetry: number | undefined;
+    let requestedIndex: number | undefined;
+    const visited = new Set<number>();
 
     const timeout = window.setTimeout(() => setError(`El reproductor de ${label} está tardando en cargar.`), LOAD_TIMEOUT);
     iframe.addEventListener("load", () => {
@@ -122,6 +137,36 @@ export function RadioPlayer({ station, spotifyTuner, onUnplayable, onSkip }: Pro
     iframe.referrerPolicy = "strict-origin-when-cross-origin";
 
     const queue = youtubeQueue(videoId);
+
+    function clearPlaylistRetry() {
+      window.clearTimeout(playlistRetry);
+      playlistRetry = undefined;
+    }
+
+    function recover(target: YouTubePlayer, code: number, allowRetry: boolean) {
+      if (!alive || terminalError) return;
+      const contentError = isYouTubeContentError(code);
+      if (contentError && (queue || playlistId !== undefined)) {
+        const length = target.getPlaylist?.()?.length || queue?.length || 0;
+        if (length === 0 && allowRetry) {
+          playlistRetry ??= window.setTimeout(() => recover(target, code, false), PLAYLIST_RETRY_DELAY);
+          return;
+        }
+        clearPlaylistRetry();
+        const index = nextYouTubeTrack(length, target.getPlaylistIndex?.() ?? -1, requestedIndex, visited);
+        if (index !== null) {
+          requestedIndex = index;
+          target.playVideoAt(index);
+          return;
+        }
+      }
+      clearPlaylistRetry();
+      terminalError = true;
+      setError(youtubeError(code));
+      setBlocked(true);
+      setNext(contentError ? findNextStation() : null);
+    }
+
     const params = new URLSearchParams({
       enablejsapi: "1",
       origin: window.location.origin,
@@ -136,22 +181,15 @@ export function RadioPlayer({ station, spotifyTuner, onUnplayable, onSkip }: Pro
     iframe.src = `https://www.youtube.com/embed${firstVideo ? `/${firstVideo}` : ""}?${params}`;
     void loadYouTubeApi().then((api) => {
       if (!alive) return;
-      let nextIndex = 1;
       player = new api.Player(iframe, {
         events: {
-          onError: (event) => {
-            if (!alive) return;
-            if (queue && player && [2, 5, 100, 101, 150].includes(event.data)) {
-              const index = Math.max(nextIndex, player.getPlaylistIndex() + 1);
-              if (index < queue.length) {
-                nextIndex = index + 1;
-                player.playVideoAt(index);
-                return;
-              }
-            }
-            setError(youtubeError(event.data));
-            setBlocked(true);
-            setNext(onUnplayable?.() ?? null);
+          onError: ({ target, data }) => recover(target, data, true),
+          onStateChange: ({ target, data }) => {
+            if (!alive || terminalError || data !== YOUTUBE_PLAYING) return;
+            clearPlaylistRetry();
+            const index = target.getPlaylistIndex?.();
+            if (index !== undefined && index >= 0) visited.add(index);
+            requestedIndex = undefined;
           },
         },
       });
@@ -163,10 +201,10 @@ export function RadioPlayer({ station, spotifyTuner, onUnplayable, onSkip }: Pro
     return () => {
       alive = false;
       window.clearTimeout(timeout);
+      clearPlaylistRetry();
       player?.destroy();
       iframe.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playlistId, provider, videoId]);
 
   useEffect(() => {

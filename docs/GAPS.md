@@ -10,7 +10,7 @@ Una brecha es una diferencia concreta entre el comportamiento esperado y el actu
 
 ## Recomendación para el lanzamiento
 
-1. **Resolver GAP-001 y el salto desde enlaces compartidos de GAP-002.** La recuperación debe conservar la emisora mientras queden tracks elegibles, evitar saltos por fallos de configuración y respetar la selección guardada al abrir un enlace.
+1. **Verificar GAP-001 y el salto desde enlaces compartidos de GAP-002.** Las correcciones locales tienen pruebas unitarias. Falta probar el flujo con el reproductor real antes de publicarlas.
 2. **Pasar una ronda de QA de los flujos principales.** Usar el checklist de QA y las pruebas de regresión de GAP-001 a GAP-003 para cubrir dos proveedores, enlaces en otra sesión, fallos de reproducción, cambios rápidos, alta, persistencia, Safari iPhone y Chrome Android. Incluir al menos el navegador integrado de la red donde se vaya a publicar. En rendimiento, basta una medición inicial en móvil y comprobar que se puede sintonizar sin bloqueos. La reproducción continua en segundo plano y el soporte de Shorts pueden esperar si el comportamiento actual se comunica con claridad.
 3. **Hacer visible «Añadir estación» antes de difundir.** UX-002 afectó una acción principal durante la demo. UX-001 puede viajar en la misma ronda si se cubren la edición pendiente, el foco y la comprobación asíncrona. El clic fuera del modal puede esperar si esos casos necesitan más trabajo.
 4. **Revisar el enlace que se va a publicar.** Confirmar en los canales elegidos la tarjeta social de QA-005, el crédito publicado y el aviso de proyecto independiente. Revisar que el texto de difusión atribuya correctamente el contenido de BACKLOG-003 y QA-008. La URL canónica y las etiquetas detalladas de procedencia pueden esperar a una revisión posterior.
@@ -21,18 +21,18 @@ Una brecha es una diferencia concreta entre el comportamiento esperado y el actu
 
 ### GAP-001 · Recuperación dentro de playlists de YouTube
 
-- **Prioridad / estado.** P0 · Open.
-- **Evidencia.** El código intenta avanzar con un índice creciente en las siete colas curadas de ocho videos que resuelve `youtubeQueue(videoId)`. Una playlist cargada por `playlistId`, incluida CircoLoco, no entra en esa rama. Al recibir un error llega al aviso de estación bloqueada y, en la vista radio, al salto diferido si hay otra estación elegible. Los videos individuales toman esa misma ruta. El código `153` también llega al salto, aunque YouTube lo atribuye a la identificación del cliente. El desmontaje invalida callbacks de YouTube y cancela el temporizador del salto. El helper que selecciona la siguiente estación tiene pruebas unitarias.
-- **Archivos.** [radio-player.tsx](../src/components/radio-player.tsx), [radio-console.tsx](../src/components/radio-console.tsx), [station-presets.ts](../src/lib/station-presets.ts), [stations.test.ts](../tests/stations.test.ts).
-- **Acción.** Extender el avance acotado a las playlists por ID usando el índice y la lista que reporta el IFrame API. Definir el manejo cuando la lista todavía no esté disponible y cuando se agoten los candidatos. Mantener el salto para un video individual cuyo contenido esté bloqueado y separar errores de configuración como `153`. Definir si el salto entre estaciones debe ocurrir también en el volante, donde hoy no se pasa `onSkip`. [Referencia del IFrame API](https://developers.google.com/youtube/iframe_api_reference)
+- **Prioridad / estado.** P0 · Fixed.
+- **Evidencia.** La corrección local aplica el mismo recorrido acotado a las colas curadas y las playlists por ID. Espera una vez si YouTube todavía no expone la lista y separa los bloqueos de contenido de errores del reproductor, incluido `153`. Al desmontar se cancela la recuperación pendiente. Los tests cubren la selección de pistas, el agotamiento y la clasificación de errores.
+- **Archivos.** [radio-player.tsx](../src/components/radio-player.tsx), [radio-console.tsx](../src/components/radio-console.tsx), [youtube-recovery.ts](../src/lib/youtube-recovery.ts), [youtube-recovery.test.ts](../tests/youtube-recovery.test.ts).
+- **Acción.** Verificar con el iframe real. El cambio automático entre emisoras sigue disponible en la vista radio. En el volante se recupera el contenido dentro de la misma playlist. [Referencia del IFrame API](https://developers.google.com/youtube/iframe_api_reference)
 - **Pruebas.** Simular primer track, track intermedio, último track con candidatos anteriores sin probar, bloqueos consecutivos, playlist agotada, lista aún no disponible, video individual, error `153` y cambio manual durante la recuperación o la cuenta regresiva. Repetir con una playlist por ID y una cola curada. Confirmar reproducción real y comportamiento en radio y volante.
 
-### GAP-002 · Compartir estaciones por URL
+### GAP-002 · Salto automático en una estación compartida
 
-- **Prioridad / estado.** P0 · Open.
-- **Evidencia.** Hay pruebas unitarias del formato compartido, Unicode, videos y parámetros inválidos o duplicados. El checklist registra un flujo anterior en Chromium con reproductores simulados. El hook lee el enlace sin exigir datos previos y arranca con `write: false`. Si el video compartido se bloquea y el salto automático se ejecuta, llama a la misma selección que una acción manual, limpia los parámetros y persiste la nueva estación.
+- **Prioridad / estado.** P0 · Fixed.
+- **Evidencia.** Antes, el salto automático usaba el mismo flujo que un cambio manual y podía limpiar la URL y persistir otra estación. La corrección local comprueba el enlace tanto al anunciar como al ejecutar un salto. Mientras la URL contenga una estación compartida válida, la selección automática queda deshabilitada. Hay pruebas del formato compartido e IDs válidos del catálogo y personalizados.
 - **Archivos.** [stations.ts](../src/lib/stations.ts), [use-stations.ts](../src/hooks/use-stations.ts), [radio-console.tsx](../src/components/radio-console.tsx), [stations.test.ts](../tests/stations.test.ts).
-- **Acción.** Verificar el flujo público con datos limpios y con una colección existente. Cubrir el salto automático desde un enlace compartido para que respete la persistencia prevista para las vistas previas.
+- **Acción.** Verificar el fallo de una estación compartida con datos limpios y con una colección existente. Comprobar que cambiar manualmente de emisora sigue funcionando.
 - **Pruebas.** Copiar y abrir enlaces de Spotify, playlist de YouTube y video individual en incógnito y otro dispositivo. Comprobar estación seleccionada, recarga, aviso para enlaces inválidos o incompletos con `station`, y preservación de la colección y la sintonía persistidas hasta una acción explícita. Incluir un video compartido que falle.
 
 ### GAP-003 · Contenido privado, eliminado o restringido
