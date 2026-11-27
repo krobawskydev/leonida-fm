@@ -183,6 +183,31 @@ test("restaura favoritas guardadas y reúne las dos fuentes de una misma emisora
   assert.equal(saved.selectedKey, DEFAULT_KEY);
 });
 
+test("traslada la sintonía, la favorita y el progreso de CircoLoco a su nueva playlist", () => {
+  const previous: Station = { provider: "spotify", playlistId: "3MEMCprk4ADKxc2OXfFKzp", name: "CircoLoco Records Radio" };
+  const current: Station = { ...previous, playlistId: "2v5DuL7jdtLM9OeNRBp5RE" };
+  const previousKey = stationKey(previous);
+  const currentKey = stationKey(current);
+  const saved = readSavedRadio(JSON.stringify({
+    ...emptyRadio(), selectedKey: previousKey, favoriteKeys: [previousKey], tunedSpotifyKeys: [previousKey, currentKey],
+  }));
+  assert.deepEqual(saved, {
+    ...emptyRadio(), selectedKey: currentKey, favoriteKeys: [currentKey], tunedSpotifyKeys: [currentKey],
+  });
+  assert.deepEqual(availableStations(saved).find((station) => stationKey(station) === currentKey), current);
+  assert.deepEqual(stationProfile(current), { genre: "House y techno", frequency: 96.1, unlockable: undefined });
+  assert.equal(stationCollection([]).some((station) => stationKey(station) === previousKey), false);
+});
+
+test("conserva los enlaces y las copias personales de la playlist anterior de CircoLoco", () => {
+  const previous: Station = { provider: "spotify", playlistId: "3MEMCprk4ADKxc2OXfFKzp", name: "Mi CircoLoco" };
+  const previousKey = stationKey(previous);
+  const saved = { ...emptyRadio(), stations: [previous], selectedKey: previousKey, favoriteKeys: [previousKey] };
+  assert.deepEqual(readSavedRadio(JSON.stringify(saved)), saved);
+  const { searchParams } = new URL(shareHref(previous, "https://leonida-fm.test/"));
+  assert.deepEqual(readSharedStation(searchParams), previous);
+});
+
 test("clasifica respuestas oEmbed de YouTube", () => {
   assert.equal(oembedProblem(200), null);
   assert.match(oembedProblem(404) ?? "", /playlist.*privado/);

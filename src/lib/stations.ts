@@ -1,6 +1,8 @@
 import type { Provider, SavedRadio, Station } from "../types/station.ts";
 
-import { DEFAULT_STATION, DEFAULT_YOUTUBE_STATION, PRESET_PROFILES, PRESET_STATIONS, youtubeQueue } from "./station-presets.ts";
+import {
+  CIRCOLOCO_SPOTIFY_ID, DEFAULT_STATION, DEFAULT_YOUTUBE_STATION, PRESET_PROFILES, PRESET_STATIONS, youtubeQueue,
+} from "./station-presets.ts";
 
 export { DEFAULT_STATION };
 
@@ -18,6 +20,8 @@ export function stationKey(station: Station) {
 }
 
 export const DEFAULT_KEY = stationKey(DEFAULT_STATION);
+const LEGACY_CIRCOLOCO_KEY = "spotify:3MEMCprk4ADKxc2OXfFKzp";
+const CIRCOLOCO_KEY = `spotify:${CIRCOLOCO_SPOTIFY_ID}`;
 const PRESETS_BY_KEY = new Map(PRESET_STATIONS.map((station) => [stationKey(station), station]));
 const SPOTIFY_UNLOCK_COUNT = 5;
 const SPOTIFY_MAIN_KEYS = new Set(PRESET_STATIONS
@@ -212,6 +216,10 @@ export function emptyRadio(): SavedRadio {
   return { version: 1, stations: [], selectedKey: DEFAULT_KEY };
 }
 
+function currentPresetKey(key: string) {
+  return key === LEGACY_CIRCOLOCO_KEY ? CIRCOLOCO_KEY : key;
+}
+
 export function readSavedRadio(raw: string | null): SavedRadio {
   if (!raw) return emptyRadio();
   let data: unknown;
@@ -235,12 +243,18 @@ export function readSavedRadio(raw: string | null): SavedRadio {
     custom.push(station);
   }
   const tuned = Array.isArray(tunedSpotifyKeys)
-    ? [...new Set(tunedSpotifyKeys.filter((key): key is string => typeof key === "string" && SPOTIFY_MAIN_KEYS.has(key)))].slice(0, SPOTIFY_UNLOCK_COUNT)
+    ? [...new Set(tunedSpotifyKeys
+      .filter((key): key is string => typeof key === "string")
+      .map(currentPresetKey)
+      .filter((key) => SPOTIFY_MAIN_KEYS.has(key)))].slice(0, SPOTIFY_UNLOCK_COUNT)
     : [];
+  const resolveSavedKey = (key: string) => keys.has(key) ? key : currentPresetKey(key);
+  const selection = typeof selectedKey === "string" ? resolveSavedKey(selectedKey) : DEFAULT_KEY;
   const favorites = new Set<string>();
   if (Array.isArray(favoriteKeys)) {
-    for (const key of favoriteKeys) {
-      if (typeof key !== "string") continue;
+    for (const savedKey of favoriteKeys) {
+      if (typeof savedKey !== "string") continue;
+      const key = resolveSavedKey(savedKey);
       const preset = PRESETS_BY_KEY.get(key);
       if (preset) favorites.add(favoriteStationKey(preset));
       else if (keys.has(key)) favorites.add(key);
@@ -249,7 +263,7 @@ export function readSavedRadio(raw: string | null): SavedRadio {
   return {
     version: 1,
     stations: custom,
-    selectedKey: typeof selectedKey === "string" && (keys.has(selectedKey) || PRESETS_BY_KEY.has(selectedKey)) ? selectedKey : DEFAULT_KEY,
+    selectedKey: keys.has(selection) || PRESETS_BY_KEY.has(selection) ? selection : DEFAULT_KEY,
     ...(tuned.length ? { tunedSpotifyKeys: tuned } : {}),
     ...(favorites.size ? { favoriteKeys: [...favorites] } : {}),
   };

@@ -1,5 +1,7 @@
 import type { Station } from "../types/station.ts";
 
+export const CIRCOLOCO_SPOTIFY_ID = "2v5DuL7jdtLM9OeNRBp5RE";
+
 // Shared dial order, genre and frequency. Playlist sources are in docs/RESEARCH.md.
 const spotifyStations = [
   ["Leonida Radio", "37i9dQZF1DX6RSJAsEDz7H", "Selección GTA", 88.1],
@@ -15,7 +17,7 @@ const spotifyStations = [
   ["Dirty South Classics", "73Q6d5NMwKED7bLPHiyZg9", "Rap sureño", 94.1],
   ["Vice City Rap Radio", "31x25723hBHIc2alR6UqZ6", "Rap actual y trap", 94.7],
   ["Honey FM", "6Xyu4b7HiQX4DjvyxrPebY", "R&B y soul", 95.3],
-  ["CircoLoco Records Radio", "3MEMCprk4ADKxc2OXfFKzp", "House y techno", 96.1],
+  ["CircoLoco Records Radio", CIRCOLOCO_SPOTIFY_ID, "House y techno", 96.1],
   ["Stockyard FM", "7oYLH18JClFgILmZo6mEt6", "Indie dance", 96.7],
   ["Back Country Radio", "55co1YrRBojltkoWRb529c", "Country y americana", 97.1],
   ["Symphony FM", "1arv3Uq0vv76LTiv1pY3Zj", "Música clásica", 97.7],
