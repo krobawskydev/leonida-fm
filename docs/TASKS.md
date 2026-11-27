@@ -15,7 +15,7 @@
 - [ ] En una sesión nueva, sintonizar cinco emisoras principales distintas en Spotify. Comprobar que las dos emisoras especiales aparezcan en el dial y sigan disponibles tras recargar.
 - [ ] Comprobar que la lista arranque cerrada en escritorio y móvil, que el contador permita abrirla y que la rueda mantenga hasta ocho opciones al final del catálogo.
 - [ ] Marcar una favorita, cambiar de proveedor y recargar. Comprobar que el filtro conserve la emisora cuando esté disponible y que se pueda quitar con el teclado.
-- [ ] Ajustar la velocidad del vehículo y comprobar que el cambio se aplique al instante y se conserve al volver de la radio.
+- [ ] Subir «Velocidad base» a 180 km/h y comprobar que se aplique al instante, se conserve al volver de la radio y el trayecto mantenga la continuidad de los tramos.
 - [ ] Comprobar que el vehículo acelere y desacelere suavemente desde el inicio del recorrido.
 - [ ] Comprobar que el velocímetro siga la velocidad del recorrido y marque cero al pausar el paisaje.
 - [ ] Recorrer los hoteles, el paseo y la playa. Comprobar la continuidad de los carriles y las aceras al volver a los hoteles.
