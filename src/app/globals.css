@@ -144,7 +144,6 @@ button:disabled { cursor: default; opacity: .5; }
   grid-template-areas: "wheel wheel wheel" "prev dial next";
 }
 .tune-prev { grid-area: prev; } .tune-next { grid-area: next; } .dial { grid-area: dial; }
-
 /* Radio wheel: stations on a ring around the live frequency. */
 .wheel {
   grid-area: wheel; position: relative; container-type: inline-size;
@@ -496,6 +495,12 @@ button:disabled { cursor: default; opacity: .5; }
   transition: opacity 200ms ease;
 }
 .stage[data-view="radio"] .car-scene::after { opacity: 1; }
+.radio-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: transparent;
+}
 
 .car-scene { position: relative; container-type: size; width: 100%; height: 100svh; overflow: hidden; background: #07090f; }
 /* Full-bleed: a 16:9 box that always covers the viewport, centered. */
@@ -607,6 +612,53 @@ button:disabled { cursor: default; opacity: .5; }
 }
 .radio-toolbar .secondary-button { background: #191a23; border-color: #8d6d595e; }
 .radio-toolbar .secondary-button:hover:not(:disabled) { border-color: var(--teal); }
+.radio-toolbar-actions { display: inline-flex; align-items: center; gap: .5rem; }
+.radio-tour-button { color: var(--teal); }
+.radio-tour {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  color: var(--text);
+  background: transparent;
+}
+.radio-tour::backdrop { background: transparent; }
+.tour-scrim { position: absolute; inset: 0; background: #080a13d1; }
+.tour-spotlight {
+  position: absolute;
+  padding: 0;
+  border: 1px solid var(--teal);
+  border-radius: .55rem;
+  background: transparent;
+  box-shadow: 0 0 1rem #6ce4d477;
+}
+button.tour-spotlight:hover { background: #6ce4d422; }
+.tour-card {
+  position: absolute;
+  top: .75rem;
+  left: .75rem;
+  width: min(21rem, calc(100% - 1.5rem));
+  max-height: calc(100% - 1.5rem);
+  overflow: auto;
+  padding: clamp(.75rem, 4vw, 1rem);
+  border: 1px solid #6ce4d473;
+  border-radius: .85rem;
+  background: #172932;
+  box-shadow: 0 .9rem 2.2rem #05070eb3;
+}
+.tour-progress { color: var(--teal); font: 650 .75rem/1.4 var(--mono); }
+.tour-card h2 { margin-top: .25rem; font-size: 1.05rem; line-height: 1.3; font-weight: 740; }
+.tour-card h2:focus-visible { outline-offset: 2px; }
+#radio-tour-description { margin-top: .35rem; color: var(--muted); font-size: .88rem; line-height: 1.5; }
+.tour-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .85rem; }
+.tour-actions button { padding-inline: .6rem; }
+.tour-skip { margin-inline-end: auto; }
 .radio-providers { display: inline-flex; gap: .25rem; }
 .radio-providers button {
   min-height: 2.75rem;

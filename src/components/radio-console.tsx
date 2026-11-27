@@ -2,9 +2,10 @@
 
 import { startTransition, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import {
-  AudioLines, ChevronLeft, ChevronRight, Copy, ListMusic, LockKeyhole, Pencil,
+  AudioLines, ChevronLeft, ChevronRight, CircleHelp, Copy, ListMusic, LockKeyhole, Pencil,
   Pause, Play, Plus, Radio, RadioTower, Share2, Star, Trash2, X,
 } from "lucide-react";
+import { useModalDialog } from "@/hooks/use-modal-dialog";
 import { useScreenTransition } from "@/hooks/use-screen-transition";
 import { useStations } from "@/hooks/use-stations";
 import { MAX_SPEED_KMH, MIN_SPEED_KMH } from "@/lib/driving-speed";
@@ -13,6 +14,7 @@ import { DEFAULT_KEY, PROVIDERS, favoriteStationKey, nextAutomaticStation, share
 import type { Provider, Station } from "@/types/station";
 import { CarSceneLayer } from "./car-scene-layer";
 import { RadioPlayer } from "./radio-player";
+import { RadioTour } from "./radio-tour";
 import type { SpotifyTuner } from "./spotify-embed";
 import { StationDialog } from "./station-dialog";
 
@@ -24,6 +26,7 @@ function initials(name: string) {
 const ticks = Array.from({ length: 49 }, (_, index) => index);
 const WHEEL_STATIONS = 8;
 const TUNING_CUE_MS = 2000;
+const RADIO_TOUR_KEY = "leonida-fm:guide:radio-tour-v1";
 const providers = Object.entries(PROVIDERS) as [Provider, string][];
 
 function ShareDialog({ station, onClose }: { station: Station; onClose: () => void }) {
@@ -32,9 +35,7 @@ function ShareDialog({ station, onClose }: { station: Station; onClose: () => vo
   const [feedback, setFeedback] = useState("");
   const url = shareHref(station, window.location.href);
 
-  useEffect(() => {
-    dialog.current?.showModal();
-  }, []);
+  useModalDialog(dialog);
 
   async function copy() {
     try {
@@ -75,6 +76,22 @@ function subscribeVisibility(callback: () => void) {
   return () => document.removeEventListener("visibilitychange", callback);
 }
 
+function subscribeRadioTour(callback: () => void) {
+  function onStorage(event: StorageEvent) {
+    if (event.key === RADIO_TOUR_KEY || event.key === null) callback();
+  }
+  window.addEventListener("storage", onStorage);
+  return () => window.removeEventListener("storage", onStorage);
+}
+
+function readRadioTourDismissed() {
+  try {
+    return window.localStorage.getItem(RADIO_TOUR_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function RadioConsole() {
   const radio = useStations();
   const [editor, setEditor] = useState<"new" | Station>();
@@ -82,10 +99,18 @@ export function RadioConsole() {
   const failed = useRef(new Set<string>());
   const [desktopView, setView] = useState<"car" | "radio">("car");
   const [canDrive, setCanDrive] = useState(false);
+  const [scenePending, setScenePending] = useState(true);
   const view = canDrive ? desktopView : "radio";
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [tourDismissedHere, setTourDismissedHere] = useState(false);
+  const [tourRequested, setTourRequested] = useState(false);
+  const tourDismissedInStorage = useSyncExternalStore(subscribeRadioTour, readRadioTourDismissed, () => true);
+  const showTour = radio.ready && view === "radio" && !editor && !shared &&
+    (tourRequested || (!scenePending && !tourDismissedHere && !tourDismissedInStorage));
   const openButton = useRef<HTMLButtonElement>(null);
+  const addStationButton = useRef<HTMLButtonElement>(null);
+  const tourButton = useRef<HTMLButtonElement>(null);
   const collectionButton = useRef<HTMLButtonElement>(null);
   const directoryButton = useRef<HTMLButtonElement>(null);
   const collectionTrigger = useRef<"header" | "dial">("header");
@@ -106,6 +131,10 @@ export function RadioConsole() {
   const transition = useScreenTransition(canDrive ? view : null, consolePanel);
   // Keep the landscape moving behind the radio while the scene is available and the tab is visible.
   const sceneRunning = canDrive && !tabHidden && !scenePaused;
+  const updateSceneAvailability = useCallback((ready: boolean, pending: boolean) => {
+    setCanDrive(ready);
+    setScenePending(pending);
+  }, []);
   const updateSpeedometer = useCallback((speed: number) => {
     const gauge = speedometer.current;
     const readout = speedReadout.current;
@@ -143,6 +172,7 @@ export function RadioConsole() {
   const wheelStart = stationWindowStart(activeIndex, radio.stations.length, WHEEL_STATIONS);
   const wheelStations = radio.stations.slice(wheelStart, wheelStart + WHEEL_STATIONS);
   const wheelSlots = wheelStations.length + 1;
+  const addStationAngle = 360 * wheelStations.length / wheelSlots;
   const profile = stationProfile(radio.active);
   const customStart = radio.stations.findIndex((station) => !stationProfile(station));
   const frequencyValue = profile?.frequency ?? 107.2 + 0.7 * (activeIndex - customStart) / Math.max(1, radio.stations.length - customStart - 1);
@@ -346,6 +376,21 @@ export function RadioConsole() {
     radio.add(station);
   }
 
+  function dismissTour() {
+    setTourRequested(false);
+    setTourDismissedHere(true);
+    try {
+      window.localStorage.setItem(RADIO_TOUR_KEY, "1");
+    } catch {
+      // Keep the tour dismissed in this session when storage is unavailable.
+    }
+  }
+
+  function openEditor(trigger: HTMLButtonElement, station: "new" | Station) {
+    trigger.focus({ preventScroll: true });
+    setEditor(station);
+  }
+
   return (
     <div className="app" data-view={view}>
       <header className="site-header">
@@ -370,7 +415,7 @@ export function RadioConsole() {
           <section className="car-scene" aria-label="Cabina de conducción" aria-hidden={!canDrive || undefined}>
             <div className="car-look">
               <div className="car-frame">
-                <CarSceneLayer playing={sceneRunning} speedKmh={speedKmh} onSpeedChange={updateSpeedometer} onReadyChange={setCanDrive} />
+                <CarSceneLayer playing={sceneRunning} speedKmh={speedKmh} onSpeedChange={updateSpeedometer} onReadyChange={updateSceneAvailability} />
               </div>
               <div ref={speedometer} className="car-speedometer" hidden={view !== "car"}
                 role="meter" aria-label="Velocidad del vehículo" aria-valuemin={0} aria-valuemax={MAX_SPEED_KMH}
@@ -397,6 +442,17 @@ export function RadioConsole() {
               </div>
             )}
           </section>
+          {canDrive && view === "radio" && (
+            <button
+              type="button" className="radio-backdrop" tabIndex={-1}
+              aria-label="Volver al volante desde el fondo" aria-controls="car-radio"
+              onClick={(event) => {
+                if (event.detail === 0 || document.elementFromPoint(event.clientX, event.clientY) === event.currentTarget) {
+                  backToCar();
+                }
+              }}
+            />
+          )}
           {(radio.invalidShare || radio.storageUnavailable) && (
             <div className="app-notice" role="status">
               {radio.invalidShare && <p>El enlace compartido es inválido o está incompleto.</p>}
@@ -406,7 +462,7 @@ export function RadioConsole() {
           <div className="cabin" id="car-radio" ref={consolePanel} onFocusCapture={keepRadioOpen}>
             <div className="radio-bezel" aria-hidden="true" />
             <div className="radio-toolbar" hidden={view !== "radio"}>
-              <div className="radio-providers" role="group" aria-label="Plataforma de reproducción">
+              <div className="radio-providers" role="group" aria-label="Plataforma de reproducción" data-tour="provider">
                 {providers.map(([provider, label]) => {
                   const current = radio.active.provider === provider;
                   const explore = radio.ready && !current && !radio.matchingStationKey(provider);
@@ -426,12 +482,22 @@ export function RadioConsole() {
                   <ChevronLeft size={16} aria-hidden="true" /> Volver al volante
                 </button>
               )}
-              <button
-                type="button" className="secondary-button share-button" disabled={!radio.ready}
-                onClick={() => setShared(radio.active)}
-              >
-                <Share2 size={15} aria-hidden="true" /> Compartir
-              </button>
+              <div className="radio-toolbar-actions">
+                <button
+                  type="button" className="secondary-button share-button" disabled={!radio.ready}
+                  onClick={(event) => {
+                    event.currentTarget.focus({ preventScroll: true });
+                    setShared(radio.active);
+                  }}
+                >
+                  <Share2 size={15} aria-hidden="true" /> Compartir
+                </button>
+                <button ref={tourButton} type="button" className="icon-button radio-tour-button"
+                  aria-label="Repetir recorrido" title="Repetir recorrido" aria-haspopup="dialog"
+                  disabled={!radio.ready} onClick={() => setTourRequested(true)}>
+                  <CircleHelp size={18} aria-hidden="true" />
+                </button>
+              </div>
               {preview && (
                 <button type="button" className="primary-button" onClick={() => radio.add(preview)}>
                   Guardar estación
@@ -445,6 +511,7 @@ export function RadioConsole() {
                 <div className="dial-controls">
                   <button
                     className="icon-button tune-button tune-prev" type="button" aria-label="Estación anterior"
+                    data-tour="tune"
                     disabled={radio.stations.length < 2} onClick={() => tune(-1)}
                   >
                     <ChevronLeft size={26} aria-hidden="true" />
@@ -483,9 +550,11 @@ export function RadioConsole() {
                       );
                     })}
                     <button
-                      type="button" className="wheel-node wheel-add" aria-label="Añadir estación" title="Añadir estación"
-                      style={{ "--angle": `${(360 / wheelSlots) * wheelStations.length}deg` } as CSSProperties}
-                      disabled={!radio.ready} onClick={() => setEditor("new")}
+                      ref={addStationButton} type="button" className="wheel-node wheel-add"
+                      aria-label="Añadir estación" title="Añadir estación"
+                      data-tour="add"
+                      style={{ "--angle": `${addStationAngle}deg` } as CSSProperties}
+                      disabled={!radio.ready} onClick={(event) => openEditor(event.currentTarget, "new")}
                     >
                       <Plus size={20} aria-hidden="true" />
                     </button>
@@ -510,6 +579,7 @@ export function RadioConsole() {
                   </div>
                   <button
                     className="icon-button tune-button tune-next" type="button" aria-label="Estación siguiente"
+                    data-tour="tune"
                     disabled={radio.stations.length < 2} onClick={() => tune(1)}
                   >
                     <ChevronRight size={26} aria-hidden="true" />
@@ -517,7 +587,7 @@ export function RadioConsole() {
                 </div>
                 <div className="tuner-actions">
                   <button ref={directoryButton} type="button" className="station-directory-link" onClick={showCollection}
-                    aria-controls="station-collection" aria-expanded={collectionOpen}>
+                    aria-controls="station-collection" aria-expanded={collectionOpen} data-tour="directory">
                     <ListMusic size={16} aria-hidden="true" />
                     <span className="sr-only">Ver lista de estaciones.</span>
                     Estación {activeIndex + 1} de {radio.stations.length}
@@ -595,7 +665,7 @@ export function RadioConsole() {
                         <div className="station-actions">
                           <button
                             type="button" className="icon-button" aria-label={`Renombrar ${station.name}`}
-                            title="Renombrar" onClick={() => setEditor(station)}
+                            title="Renombrar" onClick={(event) => openEditor(event.currentTarget, station)}
                           >
                             <Pencil size={15} aria-hidden="true" />
                           </button>
@@ -613,7 +683,7 @@ export function RadioConsole() {
                   );
                 })}
               </ul>
-              <button type="button" className="add-station" disabled={!radio.ready} onClick={() => setEditor("new")}>
+              <button type="button" className="add-station" disabled={!radio.ready} onClick={(event) => openEditor(event.currentTarget, "new")}>
                 <Plus size={19} aria-hidden="true" /> Añadir estación
               </button>
             </aside>
@@ -629,6 +699,15 @@ export function RadioConsole() {
         </small>
       </footer>
 
+      {showTour && (
+        <RadioTour panel={consolePanel} onDismiss={() => {
+          dismissTour();
+          tourButton.current?.focus();
+        }} onAdd={() => {
+          dismissTour();
+          addStationButton.current?.click();
+        }} />
+      )}
       {editor && <StationDialog station={editor === "new" ? undefined : editor} initialProvider={radio.active.provider} onSave={save} onClose={() => setEditor(undefined)} />}
       {shared && <ShareDialog station={shared} onClose={() => setShared(undefined)} />}
     </div>

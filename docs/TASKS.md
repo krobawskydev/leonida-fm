@@ -3,7 +3,11 @@
 ## Verificación en el sitio público
 
 - [ ] Comprobar que el crédito de autoría del pie de página abre el portafolio desde la radio y el volante.
+- [ ] En los diálogos de añadir, renombrar y compartir, probar el clic o toque en el fondo y el retorno del foco. Verificar que se conservan los cambios pendientes y que cancelar durante la comprobación de YouTube no guarda la estación.
+- [ ] Desde la radio ampliada, pulsar el fondo de la escena con la colección abierta y cerrada. Verificar el regreso al volante, el foco en «Ver radio» y la continuidad del iframe. Comprobar que el panel y el modo de solo radio siguen siendo interactivos.
+- [ ] En una sesión nueva, verificar el recorrido del `+`, las flechas, los selectores de plataforma y el contador de estaciones. Probar escritorio y móvil con teclado, toque y movimiento reducido. Verificar foco, Omitir, Escape, acceso directo al formulario y que «Repetir recorrido» vuelve al paso 1 tras recargar. Confirmar que el dial y el iframe conservan sus posiciones en el documento.
 - [ ] Probar la reproducción de Spotify y YouTube desde los controles oficiales.
+- [ ] En «Añadir estación», comprobar que Spotify pide «Enlace de una playlist pública» y que YouTube mantiene la etiqueta y ayuda para videos y playlists.
 - [ ] En Spotify, comprobar que al cargar la página haya que pulsar Play y que después se intente reproducir automáticamente al cambiar de emisora. Verificar que Play siga disponible si el navegador bloquea el arranque.
 - [ ] Volver al volante con Spotify y YouTube. Comprobar que el mismo reproductor siga sonando dentro de la pantalla del tablero y que vuelva al tamaño completo al abrir la radio.
 - [ ] Abrir una estación compartida en una ventana privada y comprobar la tarjeta social.

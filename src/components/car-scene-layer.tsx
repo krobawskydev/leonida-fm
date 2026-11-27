@@ -27,7 +27,7 @@ export function CarSceneLayer({ playing, speedKmh, onSpeedChange, onReadyChange 
   playing: boolean;
   speedKmh: number;
   onSpeedChange: (speedKmh: number) => void;
-  onReadyChange: (ready: boolean) => void;
+  onReadyChange: (ready: boolean, pending: boolean) => void;
 }) {
   const desktop = useSyncExternalStore(subscribeDesktop, () => window.matchMedia(DESKTOP).matches, () => false);
   const [phase, setPhase] = useState<"idle" | "mounted" | "ready" | "lost" | "failed">("idle");
@@ -50,7 +50,8 @@ export function CarSceneLayer({ playing, speedKmh, onSpeedChange, onReadyChange 
   }, [desktop, phase]);
 
   const sceneReady = desktop && phase === "ready" && overlayReady;
-  useEffect(() => { onReadyChange(sceneReady); }, [sceneReady, onReadyChange]);
+  const scenePending = desktop && (phase === "idle" || phase === "mounted" || (phase === "ready" && !overlayReady));
+  useEffect(() => { onReadyChange(sceneReady, scenePending); }, [sceneReady, scenePending, onReadyChange]);
 
   const ready = useCallback(() => setPhase((p) => (p === "mounted" || p === "lost" ? "ready" : p)), []);
   const fail = useCallback(() => setPhase("failed"), []);

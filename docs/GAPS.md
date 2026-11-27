@@ -12,7 +12,7 @@ Una brecha es una diferencia concreta entre el comportamiento esperado y el actu
 
 1. **Verificar GAP-001 y el salto desde enlaces compartidos de GAP-002.** Las correcciones locales tienen pruebas unitarias. Falta probar el flujo con el reproductor real antes de publicarlas.
 2. **Pasar una ronda de QA de los flujos principales.** Usar el checklist de QA y las pruebas de regresión de GAP-001 a GAP-003 para cubrir dos proveedores, enlaces en otra sesión, fallos de reproducción, cambios rápidos, alta, persistencia, Safari iPhone y Chrome Android. Incluir al menos el navegador integrado de la red donde se vaya a publicar. En rendimiento, basta una medición inicial en móvil y comprobar que se puede sintonizar sin bloqueos. La reproducción continua en segundo plano y el soporte de Shorts pueden esperar si el comportamiento actual se comunica con claridad.
-3. **Hacer visible «Añadir estación» antes de difundir.** UX-002 afectó una acción principal durante la demo. UX-001 puede viajar en la misma ronda si se cubren la edición pendiente, el foco y la comprobación asíncrona. El clic fuera del modal puede esperar si esos casos necesitan más trabajo.
+3. **Verificar que se encuentre «Añadir estación».** UX-002 afectó una acción principal durante la demo. Probar el recorrido de primera visita y el cierre desde el fondo de UX-001.
 4. **Revisar el enlace que se va a publicar.** Confirmar en los canales elegidos la tarjeta social de QA-005, el crédito publicado y el aviso de proyecto independiente. Revisar que el texto de difusión atribuya correctamente el contenido de BACKLOG-003 y QA-008. La URL canónica y las etiquetas detalladas de procedencia pueden esperar a una revisión posterior.
 
 **Después del lanzamiento:** los avisos intermedios de recuperación, el pulido visual móvil, las etiquetas de procedencia y las tres ideas de producto de la oficina. El alcance de esta revisión es diagnóstico y priorización.
@@ -40,7 +40,7 @@ Una brecha es una diferencia concreta entre el comportamiento esperado y el actu
 - **Prioridad / estado.** P0 · Open.
 - **Evidencia.** YouTube muestra avisos para errores `100`, `101` y `150`, y ofrece un enlace al proveedor. Al agregar contenido, el chequeo oEmbed es consultivo y permite guardar tras confirmar un aviso. Spotify vuelve a un iframe si falla la inicialización del controlador. El iframe avisa de fallo o demora de carga, pero esos eventos no identifican de forma fiable si la playlist está privada, eliminada o restringida. El panel de Spotify carece del enlace externo que sí ofrece YouTube.
 - **Archivos.** [radio-player.tsx](../src/components/radio-player.tsx), [spotify-embed.tsx](../src/components/spotify-embed.tsx), [station-dialog.tsx](../src/components/station-dialog.tsx), [stations.ts](../src/lib/stations.ts).
-- **Acción.** Ofrecer acceso directo a Spotify y usar mensajes acordes con la información que exponga cada integración. Dejar operable la selección de otras estaciones durante cualquier fallo.
+- **Acción.** Pedir una playlist pública en la etiqueta del formulario de Spotify. La comprobación del enlace sigue siendo sintáctica. Verificar los casos con contenido no disponible y que se pueda sintonizar otra estación.
 - **Pruebas.** Usar contenido público de control, privado, eliminado, con bloqueo de embed y con restricción regional cuando haya un caso disponible. Simular oEmbed inaccesible y timeout del reproductor. Comprobar salida al proveedor y sintonización posterior.
 
 ## Checklist de QA
@@ -137,21 +137,21 @@ Una brecha es una diferencia concreta entre el comportamiento esperado y el actu
 
 ## Feedback de la oficina
 
-### UX-001 · Cerrar el modal desde el fondo
+### UX-001 · Cerrar el panel de radio y los diálogos desde el fondo
 
-- **Prioridad / estado.** P1 · Open.
-- **Evidencia.** Los compañeros pulsaron fuera del modal intentando cerrarlo. El formulario y el diálogo de compartir usan `showModal()`. Sus controles cierran el diálogo y se mantiene el cierre nativo con Escape. No hay manejo explícito del clic en el fondo.
-- **Archivos.** [station-dialog.tsx](../src/components/station-dialog.tsx), [radio-console.tsx](../src/components/radio-console.tsx).
-- **Acción.** Definir el cierre desde el fondo para ambos diálogos y decidir cómo se trata una edición pendiente o una validación en curso. Asegurar que una respuesta asíncrona posterior al cierre no guarde una estación.
-- **Pruebas.** Puntero y toque fuera del diálogo, clic dentro del formulario, gesto que empieza dentro y termina fuera, Escape, botón de cierre, regreso del foco y cierre durante oEmbed.
+- **Prioridad / estado.** P1 · Fixed.
+- **Evidencia.** Los compañeros pulsaron fuera del panel ampliado intentando cerrarlo. El fondo de la escena usa el mismo cierre que «Volver al volante», conserva el iframe y devuelve el foco a «Ver radio». Los diálogos de añadir, renombrar y compartir también cierran desde el fondo si el gesto empieza y termina fuera y el formulario está limpio. El formulario comprueba que el diálogo siga abierto antes de guardar tras oEmbed.
+- **Archivos.** [station-dialog.tsx](../src/components/station-dialog.tsx), [radio-console.tsx](../src/components/radio-console.tsx), [use-modal-dialog.ts](../src/hooks/use-modal-dialog.ts), [modal-dialog.test.ts](../tests/modal-dialog.test.ts).
+- **Acción.** Verificar la interacción y la devolución del foco en navegador.
+- **Pruebas.** Pulsar fuera del panel y volver al volante, conservando el iframe y el foco. Pulsar dentro del dial, el reproductor y la colección. Comprobar el modo de solo radio. En los diálogos, probar toque fuera, gesto entre interior y exterior, Escape, devolución de foco y cierre durante oEmbed.
 
 ### UX-002 · Encontrar cómo agregar una playlist
 
-- **Prioridad / estado.** P1 · Open.
-- **Evidencia.** Los compañeros no encontraron el botón. El dial ofrece un `+` con nombre accesible «Añadir estación». El botón con texto está al final de «Mis estaciones», que arranca cerrada.
-- **Archivos.** [radio-console.tsx](../src/components/radio-console.tsx), [globals.css](../src/app/globals.css).
-- **Acción.** Dar a «Añadir estación» una entrada visible cerca del dial o del encabezado de la colección. Reutilizar el diálogo actual para playlists y videos.
-- **Pruebas.** Pedir a alguien nuevo que agregue una playlist desde la primera visita con la colección cerrada. Repetir en móvil y con teclado. Registrar si encuentra la acción sin indicaciones y si el formulario abre en el proveedor esperado.
+- **Prioridad / estado.** P1 · Fixed.
+- **Evidencia.** Los compañeros no encontraron el `+` del dial. El recorrido de primera visita lo destaca y también explica las flechas, los proveedores y la lista completa. El `?` de la barra permite repetirlo. El cierre se guarda para ese navegador.
+- **Archivos.** [radio-console.tsx](../src/components/radio-console.tsx), [radio-tour.tsx](../src/components/radio-tour.tsx), [globals.css](../src/app/globals.css).
+- **Acción.** Validar el recorrido con alguien nuevo con «Mis estaciones» cerrada.
+- **Pruebas.** Abrir el formulario desde el primer paso. Comprobar el orden, el cierre, la persistencia al recargar y la opción de repetir en móvil y con teclado.
 
 ### IDEA-001 · Patinadoras en la acera
 

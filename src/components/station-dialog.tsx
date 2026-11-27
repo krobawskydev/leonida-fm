@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
+import { useModalDialog } from "@/hooks/use-modal-dialog";
 import { NAME_LIMIT, PROVIDERS, normalizeName, oembedProblem, parseStationUrl, stationKey, youtubeOembedUrl } from "@/lib/stations";
 import type { Provider, Station } from "@/types/station";
 
@@ -16,14 +17,18 @@ export function StationDialog({ station, initialProvider, onClose, onSave }: Pro
   const dialog = useRef<HTMLDialogElement>(null);
   const nameInput = useRef<HTMLInputElement>(null);
   const urlInput = useRef<HTMLInputElement>(null);
-  const [provider, setProvider] = useState<Provider>(station?.provider ?? initialProvider);
+  const [startingProvider] = useState(station?.provider ?? initialProvider);
+  const [provider, setProvider] = useState<Provider>(startingProvider);
   const [error, setError] = useState<{ field: "name" | "url"; message: string }>();
   const [checking, setChecking] = useState(false);
   const [warned, setWarned] = useState<string>();
 
-  useEffect(() => {
-    dialog.current?.showModal();
-  }, []);
+  useModalDialog(dialog, () =>
+    !checking &&
+    nameInput.current?.value === (station?.name ?? "") &&
+    !urlInput.current?.value &&
+    provider === startingProvider
+  );
 
   async function embedWarning(candidate: Station) {
     try {
@@ -53,6 +58,7 @@ export function StationDialog({ station, initialProvider, onClose, onSave }: Pro
     if (!station && provider === "youtube" && warned !== key) {
       setChecking(true);
       const warning = await embedWarning(candidate);
+      if (!dialog.current?.open) return;
       setChecking(false);
       if (warning) {
         setWarned(key);
@@ -96,16 +102,16 @@ export function StationDialog({ station, initialProvider, onClose, onSave }: Pro
               </div>
             </fieldset>
             <label className="form-field">
-              {provider === "youtube" ? "Enlace del video o playlist" : "Enlace de la playlist"}
+              {provider === "youtube" ? "Enlace del video o playlist" : "Enlace de una playlist pública"}
               <input
                 ref={urlInput} type="url" name="url" autoFocus required maxLength={2048}
                 placeholder={provider === "spotify" ? "https://open.spotify.com/playlist/…" : "https://www.youtube.com/watch?v=…"}
                 aria-invalid={error?.field === "url"}
-                aria-describedby={error?.field === "url" ? "station-error" : "playlist-hint"}
+                aria-describedby={error?.field === "url" ? "station-error" : provider === "youtube" ? "playlist-hint" : undefined}
                 onChange={() => { if (error?.field === "url") setError(undefined); }}
               />
             </label>
-            <p id="playlist-hint" className="form-hint">{provider === "youtube" ? "Puedes usar un mix, un video o una playlist pública." : "Usa el enlace de una playlist compartible."}</p>
+            {provider === "youtube" && <p id="playlist-hint" className="form-hint">Puedes usar un mix, un video o una playlist pública.</p>}
           </>
         )}
         <label className="form-field">
